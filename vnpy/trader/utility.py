@@ -88,19 +88,24 @@ def get_icon_path(filepath: str, ico_name: str) -> str:
     return str(icon_path)
 
 
-def load_json(filename: str) -> dict:
-    """
-    Load data from json file in temp path.
-    """
-    filepath = get_file_path(filename)
+# def load_json(filename: str) -> dict:
+#     """
+#     Load data from json file in temp path.
+#     """
+#     filepath = get_file_path(filename)
+#
+#     if filepath.exists():
+#         with open(filepath, mode="r", encoding="UTF-8") as f:
+#             data = json.load(f)
+#         return data
+#     else:
+#         save_json(filename, {})
+#         return {}
 
-    if filepath.exists():
-        with open(filepath, mode="r", encoding="UTF-8") as f:
-            data = json.load(f)
-        return data
-    else:
-        save_json(filename, {})
-        return {}
+def load_json(filepath):
+    with open(filepath, mode="r", encoding="UTF-8") as f:
+        result = json.load(f)
+    return result
 
 
 def save_json(filename: str, data: dict) -> None:

@@ -63,6 +63,10 @@ class MainEngine:
 
         os.chdir(TRADER_DIR)    # Change working directory
         self.init_engines()     # Initialize function engines
+        self.global_setting = SETTINGS
+
+    def init_global_setting(self, setting: dict = None):
+        self.global_setting.update(setting)
 
     def add_engine(self, engine_class: Any) -> "BaseEngine":
         """

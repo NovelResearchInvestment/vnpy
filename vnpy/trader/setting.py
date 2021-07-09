@@ -46,9 +46,9 @@ SETTINGS: Dict[str, Any] = {
     "genus.child_target": "",
 }
 
-# Load global setting from json file.
-SETTING_FILENAME: str = "vt_setting.json"
-SETTINGS.update(load_json(SETTING_FILENAME))
+# # Load global setting from json file.
+# SETTING_FILENAME: str = "vt_setting.json"
+# SETTINGS.update(load_json(SETTING_FILENAME))
 
 
 def get_settings(prefix: str = "") -> Dict[str, Any]:
