@@ -305,9 +305,12 @@ class LogEngine(BaseEngine):
         Add file output of log.
         """
         today_date = datetime.now().strftime("%Y%m%d")
-        filename = f"vt_{today_date}.log"
-        log_path = get_folder_path("log")
-        file_path = log_path.joinpath(filename)
+        if SETTINGS["log.file"]:
+            file_path = SETTINGS["log.file"]
+        else:
+            filename = f"vt_{today_date}.log"
+            log_path = get_folder_path("log")
+            file_path = log_path.joinpath(filename)
 
         file_handler = logging.FileHandler(
             file_path, mode="a", encoding="utf8"

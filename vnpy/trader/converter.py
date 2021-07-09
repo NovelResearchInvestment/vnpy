@@ -8,6 +8,7 @@ from .object import (
     OrderData,
     TradeData,
     PositionData,
+    AccountData,
     OrderRequest
 )
 from .constant import Direction, Offset, Exchange
@@ -20,6 +21,16 @@ class OffsetConverter:
         """"""
         self.main_engine: MainEngine = main_engine
         self.holdings: Dict[str, "PositionHolding"] = {}
+
+    def update_account(self, account: AccountData) -> None:
+        """"""
+        # holding = self.get_position_holding(account.vt_symbol)
+        vt_symbol = f"{account.accountid.lower()}usdt.{account.gateway_name}"
+        if not self.is_convert_required(vt_symbol):
+            return
+
+        holding = self.get_position_holding(vt_symbol)
+        holding.update_account(account)
 
     def update_position(self, position: PositionData) -> None:
         """"""
@@ -107,6 +118,7 @@ class PositionHolding:
         self.exchange: Exchange = contract.exchange
 
         self.active_orders: Dict[str, OrderData] = {}
+        self.account_info: Dict[str, OrderData] = {}
 
         self.long_pos: float = 0
         self.long_yd: float = 0
@@ -123,6 +135,16 @@ class PositionHolding:
         self.short_pos_frozen: float = 0
         self.short_yd_frozen: float = 0
         self.short_td_frozen: float = 0
+
+    def update_account(self, account: AccountData) -> None:
+        """"""
+        # self.gateway_name = account.gateway_name
+        # self.accountid = account.accountid
+        # self.balance = account.balance
+        # self.frozen = account.frozen
+
+        for k, v in account.__dict__.items():
+            self.account_info[k] = v
 
     def update_position(self, position: PositionData) -> None:
         """"""
