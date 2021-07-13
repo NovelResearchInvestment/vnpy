@@ -752,7 +752,10 @@ class BinanceDataWebsocketApi(WebsocketClient):
         tick = self.ticks[symbol]
 
         if channel == "ticker":
-            tick.volume = float(data['v'])
+            # reference:
+            # https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md
+
+            tick.volume = float(data['Q'])
             tick.open_price = float(data['o'])
             tick.high_price = float(data['h'])
             tick.low_price = float(data['l'])
