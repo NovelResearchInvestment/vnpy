@@ -3,6 +3,7 @@
 
 import logging
 from logging import Logger
+from logging.handlers import RotatingFileHandler
 import smtplib
 import os
 from abc import ABC
@@ -316,9 +317,8 @@ class LogEngine(BaseEngine):
             log_path = get_folder_path("log")
             file_path = log_path.joinpath(filename)
 
-        file_handler = logging.FileHandler(
-            file_path, mode="a", encoding="utf8"
-        )
+        file_handler = RotatingFileHandler(file_path, mode='a', maxBytes=10 << 20, backupCount=5, encoding="utf8", delay=False)
+        # file_handler = logging.FileHandler(file_path, mode="a", encoding="utf8")
         file_handler.setLevel(self.level)
         file_handler.setFormatter(self.formatter)
         self.logger.addHandler(file_handler)
