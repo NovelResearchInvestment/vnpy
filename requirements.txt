@@ -18,7 +18,7 @@ PyCryptodome==3.9.9
 futu-api
 tigeropen
 rqdatac
-ta-lib
+# ta-lib
 ibapi
 deap
 pyzmq
