@@ -308,12 +308,30 @@ class BinanceRestApi(RestClient):
         data = {
             "security": Security.NONE
         }
-        self.add_request(
+
+        response = self.add_request(
             method="GET",
             path="/api/v1/exchangeInfo",
             callback=self.on_query_contract,
             data=data
         )
+        # try_count = 0
+        # while try_count < 3:
+        #     response = self.add_request(
+        #         method="GET",
+        #         path="/api/v1/exchangeInfo",
+        #         callback=self.on_query_contract,
+        #         data=data
+        #     )
+        #     if response.response is not None:
+        #         if response.response.status_code == 200:
+        #             try_count = 3
+        #
+        #     try_count += 1
+        #     print(f"合约信息未找到[Conenction Response: {response.response}] and Retrying...{try_count}")
+
+
+
 
     def _new_order_id(self):
         """"""
@@ -760,6 +778,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.high_price = float(data['h'])
             tick.low_price = float(data['l'])
             tick.last_price = float(data['c'])
+            tick.turnover = tick.volume * tick.last_price
             tick.datetime = generate_datetime(float(data['E']))
         else:
             bids = data["bids"]
