@@ -108,11 +108,20 @@ def load_json(filepath):
     return result
 
 
-def save_json(filename: str, data: dict) -> None:
-    """
-    Save data into json file in temp path.
-    """
-    filepath = get_file_path(filename)
+# def save_json(filename: str, data: dict) -> None:
+#     """
+#     Save data into json file in temp path.
+#     """
+#     filepath = get_file_path(filename)
+#     with open(filepath, mode="w+", encoding="UTF-8") as f:
+#         json.dump(
+#             data,
+#             f,
+#             indent=4,
+#             ensure_ascii=False
+#         )
+
+def save_json(filepath: str, data: dict) -> None:
     with open(filepath, mode="w+", encoding="UTF-8") as f:
         json.dump(
             data,
