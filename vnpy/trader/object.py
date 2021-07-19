@@ -414,3 +414,14 @@ class QuoteRequest:
             gateway_name=gateway_name,
         )
         return quote
+
+
+@dataclass
+class ResponseContainer:
+
+    def __init__(self):
+        self.results = {}
+
+    def store(self, data, request):
+        self.results['data'] = data
+        self.results['request'] = request

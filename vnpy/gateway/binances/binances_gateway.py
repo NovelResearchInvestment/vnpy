@@ -13,6 +13,7 @@ from threading import Lock
 from typing import Dict, List, Tuple
 from vnpy.trader.utility import round_to
 import pytz
+from typing import Any, Dict, List
 
 from requests.exceptions import SSLError
 
@@ -39,7 +40,8 @@ from vnpy.trader.object import (
     OrderRequest,
     CancelRequest,
     SubscribeRequest,
-    HistoryRequest
+    HistoryRequest,
+    ResponseContainer,
 )
 from vnpy.trader.event import EVENT_TIMER
 from vnpy.event import Event, EventEngine
@@ -112,14 +114,24 @@ class BinancesGateway(BaseGateway):
     VN Trader Gateway for Binance connection.
     """
 
-    default_setting = {
+    # default_setting = {
+    #     "key": "",
+    #     "secret": "",
+    #     "会话数": 3,
+    #     "服务器": ["TESTNET", "REAL"],
+    #     "合约模式": ["反向", "正向"],
+    #     "代理地址": "",
+    #     "代理端口": 0,
+    # }
+
+    default_setting: Dict[str, Any] = {
         "key": "",
         "secret": "",
-        "会话数": 3,
-        "服务器": ["TESTNET", "REAL"],
-        "合约模式": ["反向", "正向"],
-        "代理地址": "",
-        "代理端口": 0,
+        "session_number": 3,
+        "server": ["TESTNET", "REAL"],
+        "contract_type": ["COIN", "USDT"],
+        "proxy_host": "",
+        "proxy_port": 0,
     }
 
     exchanges: Exchange = [Exchange.BINANCE]
@@ -136,14 +148,14 @@ class BinancesGateway(BaseGateway):
 
     def connect(self, setting: dict) -> None:
         """"""
-        key = setting["key"]
-        secret = setting["secret"]
-        session_number = setting["会话数"]
-        server = setting["服务器"]
-        proxy_host = setting["代理地址"]
-        proxy_port = setting["代理端口"]
+        key: str = setting["key"]
+        secret: str = setting["secret"]
+        session_number: str = setting["session_number"]
+        server: str = setting["server"]
+        proxy_host: str = setting["proxy_host"]
+        proxy_port: str = setting["proxy_port"]
 
-        if setting["合约模式"] == "正向":
+        if setting["contract_type"] == "USDT":
             usdt_base = True
         else:
             usdt_base = False
@@ -224,6 +236,7 @@ class BinancesRestApi(RestClient):
         self.order_count_lock: Lock = Lock()
         self.connect_time: int = 0
         self.usdt_base: bool = False
+        self.container = ResponseContainer()
 
     def sign(self, request: Request) -> Request:
         """
@@ -318,6 +331,7 @@ class BinancesRestApi(RestClient):
         self.query_position()
         self.query_order()
         self.query_contract()
+        self.query_indexprice()
         self.start_user_stream()
 
     def query_time(self) -> Request:
@@ -401,6 +415,18 @@ class BinancesRestApi(RestClient):
             method="GET",
             path=path,
             callback=self.on_query_contract,
+            data=data
+        )
+
+    def query_indexprice(self, symbol="") -> Request:
+        """"""
+        data = {"security": Security.SIGNED}
+        path = "/fapi/v1/premiumIndex?symbol=" + symbol
+
+        self.add_request(
+            method="GET",
+            path=path,
+            callback=self.container.store,
             data=data
         )
 
@@ -634,6 +660,13 @@ class BinancesRestApi(RestClient):
             symbol_contract_map[contract.symbol] = contract
 
         self.gateway.write_log("合约信息查询成功")
+
+    def on_query_indexprice(self, data: dict, request: Request) -> None:
+        """"""
+
+        self.gateway.write_log("资金费率查询成功")
+        print(data)
+        return data
 
     def on_send_order(self, data: dict, request: Request) -> None:
         """"""
@@ -987,7 +1020,7 @@ class BinancesDataWebsocketApi(WebsocketClient):
         tick = self.ticks[symbol]
 
         if channel == "ticker":
-            tick.volume = float(data['v'])
+            tick.volume = float(data['Q'])
             tick.open_price = float(data['o'])
             tick.high_price = float(data['h'])
             tick.low_price = float(data['l'])

@@ -40,3 +40,5 @@ vnpy_bybit
 vnpy_ctabacktester
 vnpy_riskmanager
 vnpy_datamanager
+tqdm
+numba
