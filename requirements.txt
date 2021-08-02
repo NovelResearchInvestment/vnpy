@@ -8,7 +8,7 @@ requests
 websocket-client
 peewee
 pymysql
-psycopg2
+# psycopg2
 mongoengine
 numpy
 pandas
@@ -16,7 +16,7 @@ matplotlib
 seaborn
 PyCryptodome==3.9.9
 futu-api
-tigeropen
+# tigeropen
 rqdatac
 # ta-lib
 ibapi
@@ -25,11 +25,11 @@ pyzmq
 wmi
 QScintilla==2.11.4
 plotly
-quickfix
+# quickfix
 trading-calendars
 influxdb
-vnpy_rest
-vnpy_websocket
+# vnpy_rest
+# vnpy_websocket
 vnpy_ctp
 vnpy_ctptest
 vnpy_okex
@@ -42,3 +42,4 @@ vnpy_riskmanager
 vnpy_datamanager
 tqdm
 numba
+tabulate
