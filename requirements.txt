@@ -1,6 +1,6 @@
 six
 wheel
-tzlocal
+tzlocal==2.0.0
 PyQt5==5.14.1
 pyqtgraph
 qdarkstyle
@@ -17,7 +17,7 @@ seaborn
 PyCryptodome==3.9.9
 futu-api
 # tigeropen
-rqdatac
+# rqdatac
 # ta-lib
 ibapi
 deap
