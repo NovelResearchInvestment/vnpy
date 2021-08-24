@@ -14,7 +14,7 @@ from mongoengine import (
 from mongoengine.errors import DoesNotExist
 
 from vnpy.trader.constant import Exchange, Interval
-from vnpy.trader.object import BarData, TickData
+from vnpy.trader.object import BarData, TickData, OrderData, TradeData, PositionData, AccountData
 from vnpy.trader.database import (
     BaseDatabase,
     BarOverview,
@@ -22,7 +22,7 @@ from vnpy.trader.database import (
     convert_tz
 )
 from vnpy.trader.setting import SETTINGS
-
+from copy import copy
 
 class DbBarData(Document):
     """"""
@@ -32,6 +32,7 @@ class DbBarData(Document):
     datetime: datetime = DateTimeField()
     interval: str = StringField()
 
+    name: str = StringField()
     volume: float = FloatField()
     open_interest: float = FloatField()
     open_price: float = FloatField()
@@ -104,6 +105,106 @@ class DbTickData(Document):
     }
 
 
+class DbOrderData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    ordertype: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    traded: float = FloatField()
+    status: str = StringField()
+    reference: str = StringField()
+    vt_orderid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbTradeData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    tradeid: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    reference: str = StringField()
+    vt_orderid: str = StringField()
+    vt_tradeid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbPositionData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+
+    gateway_name: str = StringField()
+    symbol: str = StringField()
+    exchange: str = StringField()
+    direction: str = StringField()
+    volume: str = FloatField()
+    frozen: str = FloatField()
+    price: str = FloatField()
+    pnl: str = FloatField()
+    yd_volume: str = FloatField()
+    vt_symbol: str = StringField()
+    vt_positionid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbAccountData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
 class DbBarOverview(Document):
     """"""
 
@@ -162,7 +263,7 @@ class MongodbDatabase(BaseDatabase):
         for bar in bars:
             bar.datetime = convert_tz(bar.datetime)
 
-            d = bar.__dict__
+            d = copy(bar.__dict__)
             d["exchange"] = d["exchange"].value
             d["interval"] = d["interval"].value
             d.pop("gateway_name")
@@ -210,17 +311,77 @@ class MongodbDatabase(BaseDatabase):
         for tick in ticks:
             tick.datetime = convert_tz(tick.datetime)
 
-            d = tick.__dict__
+            d = copy(tick.__dict__)
             d["exchange"] = d["exchange"].value
             d.pop("gateway_name")
             d.pop("vt_symbol")
             param = to_update_param(d)
-
+            # .objects() declare database index
             DbTickData.objects(
                 symbol=d["symbol"],
                 exchange=d["exchange"],
                 datetime=d["datetime"],
             ).update_one(upsert=True, **param)
+
+    def save_order_data(self, orders: List[OrderData]) -> bool:
+        for order in orders:
+            order.datetime = convert_tz(order.datetime)
+            d = copy(order.__dict__)
+            d["exchange"] = d["exchange"].value
+            d["ordertype"] = d['type'].value
+            d["direction"] = d['direction'].value
+            d["offset"] = d['offset'].value
+            d["status"] = d['status'].value
+            d["reference"] = SETTINGS['account_setting']['key']
+            d.pop("gateway_name")
+            d.pop("vt_symbol")
+            d.pop("type")
+            param = to_update_param(d)
+            DbOrderData.objects(
+                symbol=d["symbol"],
+                exchange=d["exchange"],
+                datetime=d["datetime"],
+            ).update_one(upsert=True, **param)
+
+    def save_trade_data(self, trades: List[TradeData]) -> bool:
+        for trade in trades:
+            trade.datetime = convert_tz(trade.datetime)
+            d = copy(trade.__dict__)
+            d["exchange"] = d["exchange"].value
+            d["tradeid"] = str(d["tradeid"])
+            d["direction"] = d['direction'].value
+            d["offset"] = d['offset'].value
+            d["reference"] = SETTINGS['account_setting']['key']
+            d.pop("gateway_name")
+            d.pop("vt_symbol")
+            param = to_update_param(d)
+            DbTradeData.objects(
+                symbol=d["symbol"],
+                exchange=d["exchange"],
+                datetime=d["datetime"],
+            ).update_one(upsert=True, **param)
+
+    def save_position_data(self, positions: List[PositionData]) -> bool:
+        for position in positions:
+            position.datetime = convert_tz(position.datetime)
+            d = copy(position.__dict__)
+            d["exchange"] = d["exchange"].value
+            d["direction"] = d['direction'].value
+            d["reference"] = SETTINGS['account_setting']['key']
+            d.pop("gateway_name")
+            d.pop("vt_symbol")
+            param = to_update_param(d)
+            DbPositionData.objects(
+                symbol=d["symbol"],
+                exchange=d["exchange"],
+            ).update_one(upsert=True, **param)
+
+    def save_account_data(self, accounts: List[AccountData]) -> bool:
+        for account in accounts:
+            account.datetime = convert_tz(account.datetime)
+            d = copy(account.__dict__)
+            param = to_update_param(d)
+            DbAccountData.objects().update_one(upsert=True, **param)
 
     def load_bar_data(
         self,
@@ -276,6 +437,18 @@ class MongodbDatabase(BaseDatabase):
             ticks.append(db_tick)
 
         return ticks
+
+    def load_order_data(self) -> List[OrderData]:
+        pass
+
+    def load_trade_data(self) -> List[TradeData]:
+        pass
+
+    def load_position_data(self) -> List[PositionData]:
+        pass
+
+    def load_account_data(self) -> List[AccountData]:
+        pass
 
     def delete_bar_data(
         self,
