@@ -209,6 +209,106 @@ class DbAccountData(Document):
     }
 
 
+class DbOrderData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    ordertype: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    traded: float = FloatField()
+    status: str = StringField()
+    reference: str = StringField()
+    vt_orderid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbTradeData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    tradeid: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    reference: str = StringField()
+    vt_orderid: str = StringField()
+    vt_tradeid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbPositionData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+
+    gateway_name: str = StringField()
+    symbol: str = StringField()
+    exchange: str = StringField()
+    direction: str = StringField()
+    volume: str = FloatField()
+    frozen: str = FloatField()
+    price: str = FloatField()
+    pnl: str = FloatField()
+    yd_volume: str = FloatField()
+    vt_symbol: str = StringField()
+    vt_positionid: str = StringField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "localtime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbAccountData(Document):
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    localtime: datetime = DateTimeField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime"),
+                "unique": True,
+            }
+        ],
+    }
+
+
 class DbBarOverview(Document):
     """"""
 
