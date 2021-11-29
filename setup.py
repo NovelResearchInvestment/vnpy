@@ -64,7 +64,7 @@ def get_install_requires():
         "matplotlib",
         "seaborn",
         "rqdatac",
-        "ta-lib",
+        # "ta-lib",
         "deap",
         "pyzmq",
         "QScintilla"

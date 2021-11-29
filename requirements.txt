@@ -30,16 +30,16 @@ trading-calendars
 influxdb
 # vnpy_rest
 # vnpy_websocket
-vnpy_ctp
-vnpy_ctptest
-vnpy_okex
-vnpy_deribit
-vnpy_xtp
-vnpy_bybit
+# vnpy_ctp
+# vnpy_ctptest
+# vnpy_okex
+# vnpy_deribit
+# vnpy_xtp
+# vnpy_bybit
 # vnpy_ctastrategy
-vnpy_ctabacktester
-vnpy_riskmanager
-vnpy_datamanager
+# vnpy_ctabacktester
+# vnpy_riskmanager
+# vnpy_datamanager
 tqdm
 numba
 tabulate
