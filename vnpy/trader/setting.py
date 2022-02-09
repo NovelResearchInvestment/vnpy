@@ -16,7 +16,7 @@ SETTINGS: Dict[str, Any] = {
     "log.active": True,
     "log.level": CRITICAL,
     "log.console": True,
-    "log.file": "",
+    "log.file": True,
 
     "email.server": "smtp.qq.com",
     "email.port": 465,
@@ -38,8 +38,9 @@ SETTINGS: Dict[str, Any] = {
     "database.password": ""
 }
 
-# # Load global setting from json file.
+# Load global setting from json file.
 SETTING_FILENAME: str = "vt_setting.json"
+# SETTINGS.update(load_json(SETTING_FILENAME))
 try:
     SETTINGS.update(load_json(SETTING_FILENAME))
 except Exception as e:
