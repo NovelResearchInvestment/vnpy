@@ -1,5 +1,5 @@
 """
-Event type string used in the trading platform.
+Event type string used in VN Trader.
 """
 
 from vnpy.event import EVENT_TIMER  # noqa

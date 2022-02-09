@@ -1,1 +1,1 @@
-from vnpy_femas import FemasGateway
+from .femas_gateway import FemasGateway

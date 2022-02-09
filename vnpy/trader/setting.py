@@ -1,5 +1,5 @@
 """
-Global setting of the trading platform.
+Global setting of VN Trader.
 """
 
 from logging import CRITICAL
@@ -31,15 +31,14 @@ SETTINGS: Dict[str, Any] = {
 
     "database.timezone": get_localzone().zone,
     "database.name": "sqlite",
-    "database.database": "database.db",
-    "database.host": "",
-    "database.port": 0,
-    "database.user": "",
+    "database.database": "database.db",         # for sqlite, use this as filepath
+    "database.host": "localhost",
+    "database.port": 3306,
+    "database.user": "root",
     "database.password": ""
 }
 
-
-# Load global setting from json file.
+# # Load global setting from json file.
 SETTING_FILENAME: str = "vt_setting.json"
 try:
     SETTINGS.update(load_json(SETTING_FILENAME))

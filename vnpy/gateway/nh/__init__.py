@@ -1,1 +1,1 @@
-from vnpy_nhtd import NhStockGateway, NhFuturesGateway
+from .nh_gateway import NhFuturesGateway, NhStockGateway

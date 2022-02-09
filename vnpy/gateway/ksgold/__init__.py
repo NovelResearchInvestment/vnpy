@@ -1,1 +1,1 @@
-from vnpy_ksgold import KsgoldGateway
+from .ksgold_gateway import KsgoldGateway
