@@ -26,7 +26,6 @@ wmi
 QScintilla==2.11.4
 plotly
 # quickfix
-trading-calendars
 influxdb
 # vnpy_rest
 # vnpy_websocket
@@ -43,3 +42,5 @@ influxdb
 tqdm
 numba
 tabulate
+exchange-calendars
+psycopg2-binary
