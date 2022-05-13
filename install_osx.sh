@@ -7,7 +7,7 @@ shift 2
 [[ -z $python ]] && python=python
 [[ -z $prefix ]] && prefix=/usr
 
-$python -m pip install --upgrade pip setuptools wheel
+$python -m pip install --upgrade pip wheel
 
 # # Get and build ta-lib
 # function install-ta-lib()
@@ -27,17 +27,15 @@ $python -m pip install --upgrade pip setuptools wheel
 # }
 # ta-lib-exists || install-ta-lib
 
-# old versions of ta-lib imports numpy in setup.py
-$python -m pip install numpy
+# install ta-lib
+$python -m pip install numpy==1.21.5
+$python -m pip install ta-lib==0.4.24
 
-# Install extra packages
-$python -m pip install ta-lib
+# degrade setuptools to install deap 1.3.1 for python3.10 
+$python -m pip install setuptools==57.0.0
 
 # Install Python Modules
 $python -m pip install -r requirements.txt
 
-# Install local Chinese language environment
-locale-gen zh_CN.GB18030
-
-# Install vn.py
+# Install VeighNa
 $python -m pip install . $@

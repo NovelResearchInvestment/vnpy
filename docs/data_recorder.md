@@ -1,14 +1,14 @@
-# DataRecorder - 行情记录模块
+# DataRecorder - 实盘行情记录模块
 
-DataRecorder是用于**实时行情记录**的模块，用户可以利用该模块记录实时Tick数据和K线数据，并自动写入保存到数据库中。
+DataRecorder是用于**实盘行情记录**的模块，用户可以利用该模块记录实时Tick数据和K线数据，并自动写入保存到数据库中。
 
 记录的数据可以通过DataManager模块查看，也可以用于CtaBacktester的历史回测，以及CtaStrategy、PortfolioStrategy等策略的实盘初始化。
 
 ## 加载启动
 
-### VN Station加载
+### VeighNa Station加载
 
-启动登录VN Station后，点击【VN Trader Pro】按钮，在配置对话框中的【上层应用】栏勾选【DataRecorder】。
+启动登录VeighNa Station后，点击【交易】按钮，在配置对话框中的【应用模块】栏勾选【DataRecorder】。
 
 ### 脚本加载
 
@@ -24,7 +24,11 @@ main_engine.add_app(DataRecorderApp)
 
 ## 启动模块
 
-在启动模块之前，请先连接交易接口（连接方法详见基本使用篇的连接接口部分），看到VN Trader主界面【日志栏】输出“合约信息查询成功”之后再启动模块。
+在启动模块之前，请先连接交易接口（连接方法详见基本使用篇的连接接口部分），看到VeighNa Trader主界面【日志栏】输出“合约信息查询成功”之后再启动模块，如下图所示：
+
+![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/cta_strategy/1.png)
+
+请注意，IB接口因为登录时无法自动获取所有的合约信息，只有在用户手动订阅行情时才能获取。因此需要在主界面上先行手动订阅合约行情，再启动模块。
 
 成功连接交易接口后，在菜单栏中点击【功能】-> 【行情记录】，或者点击左侧按钮栏的图标：
 

@@ -4,7 +4,7 @@ Global setting of VN Trader.
 
 from logging import CRITICAL
 from typing import Dict, Any
-from tzlocal import get_localzone
+from tzlocal import get_localzone_name
 
 from .utility import load_json
 
@@ -29,7 +29,7 @@ SETTINGS: Dict[str, Any] = {
     "datafeed.username": "",
     "datafeed.password": "",
 
-    "database.timezone": get_localzone().zone,
+    "database.timezone": get_localzone_name(),
     "database.name": "sqlite",
     "database.database": "database.db",         # for sqlite, use this as filepath
     "database.host": "localhost",
@@ -48,5 +48,5 @@ except Exception as e:
 
 
 def get_settings(prefix: str = "") -> Dict[str, Any]:
-    prefix_length = len(prefix)
+    prefix_length: int = len(prefix)
     return {k[prefix_length:]: v for k, v in SETTINGS.items() if k.startswith(prefix)}

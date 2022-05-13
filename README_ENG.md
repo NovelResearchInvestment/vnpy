@@ -5,24 +5,24 @@
 </p>
 
 <p align="center">
-    <img src ="https://img.shields.io/badge/version-2.0.7-blueviolet.svg"/>
+    <img src ="https://img.shields.io/badge/version-3.1.0-blueviolet.svg"/>
     <img src ="https://img.shields.io/badge/platform-windows|linux|macos-yellow.svg"/>
-    <img src ="https://img.shields.io/badge/python-3.7-blue.svg" />
-    <img src ="https://img.shields.io/circleci/build/github/vnpy/vnpy?token=4d11df68295c8cc02a2bede46094991364190bbc"/>
+    <img src ="https://img.shields.io/badge/python-3.10-blue.svg" />
+    <img src ="https://img.shields.io/github/workflow/status/vnpy/vnpy/Python%20application/master"/>
     <img src ="https://img.shields.io/github/license/vnpy/vnpy.svg?color=orange"/>
 </p>
 
-vn.py is a Python-based open source quantitative trading system development framework, officially released in January 2015, has grown step by step into a full-featured quantitative trading platform with 6 years of continuous contributions from the open source community, and currently has more than 600 users from domestic and international financial institutions, including: private equity funds, securities proprietary and capital management, futures capital management and subsidiaries, university research institutions, proprietary trading companies, exchanges, Token Funds, etc.
+VeighNa is a Python-based open source quantitative trading system development framework, officially released in January 2015, has grown step by step into a full-featured quantitative trading platform with 6 years of continuous contributions from the open source community, and currently has many users from domestic and international financial institutions, including: hedge funds, investment banks, futures brokers, university research institutions, proprietary trading companies, etc.
 
-The new 《vn.py Full Practical Advance》 online course series has been launched on the official WeChat public number [**vnpy-community**], covering CTA strategies (completed), options volatility trading (being updated) and more. To purchase, please scan the QR code below and click the 【Advanced Course】 button in the menu bar to.
+The new "VeighNa Full Practical Advance" online course series has been launched on the official WeChat account [**VeighNa开源量化**], covering CTA strategies (completed), options volatility trading (being updated) and more. To purchase, please scan the QR code below and click the [Advanced Course] button in the menu bar to.
 
 <p align="center">
   <img src ="https://vnpy.oss-cn-shanghai.aliyuncs.com/vnpy_qr.jpg"/>
 </p>
 
-If you have any questions about using vn.py for secondary development (strategies, modules, etc.), please check the [**vn.pyProject Documentation**](https://www.vnpy.com/docs/cn/index.html). If you can't solve it, please go to the 【Questions and Help】 section of the [**Official Community Forum**](https://www.vnpy.com/forum/) forum for help, or share your experience in the 【Experience Sharing】 section!
+If you have any questions about using VeighNa for secondary development (strategies, modules, etc.), please check the [**VeighNa Project Documentation**](https://www.vnpy.com/docs/cn/index.html). If you can't solve it, please go to the [Questions and Help] section of the [**Official Community Forum**](https://www.vnpy.com/forum/) forum for help, or share your experience in the [Experience Sharing] section!
 
-For financial institution users of vn.py, a special 【vn.py Institutional Users Group】 (QQ group number: 676499931) has been created to share issues related to institutional applications, such as: interbank market access, asset management O32 system, distributed deployment, etc. Please note that this group is for financial institution users only. Please note that this group is only open to financial institution users, please specify: Name - Institution - Department when adding the group.
+For financial institution users of VeighNa, a special [VeighNa Institutional Users Group] (QQ group number: 676499931) has been created to share issues related to institutional applications, such as: interbank market access, asset management O32 system, distributed deployment, etc. Please note that this group is only open to financial institution users, please specify: Name - Institution - Department when joining the group.
 
 ## Functional Features
 
@@ -38,21 +38,23 @@ For financial institution users of vn.py, a special 【vn.py Institutional Users
 
         * CTP Securities (sopt): ETF options
 
-        * Pegasus (femas): domestic futures
+        * FEMAS ([femas](https://www.github.com/vnpy/vnpy_femas)): domestic futures
 
         * Hang Seng UFT (uft): domestic futures, ETF options
 
-        * Feitron Securities (sec): ETF options
+        * APEX XSpeed ([sec](https://www.github.com/vnpy/vnpy_sec)): ETF options
+
+        * APEX HTS ([hts](https://www.github.com/vnpy/vnpy_hts)): ETF options
 
         * South China NHTD (nhtd): domestic futures, ETF options
 
         * Kuan Rui (oes): domestic securities (A shares), ETF options
 
-        * Zhongtai XTP (xtp): Domestic securities (A shares), ETF options
+        * TORA ([tora](https://www.github.com/vnpy/vnpy_tora)): domestic securities (A shares), ETF options
 
-        * Guotai Junan (gtja): Domestic securities (A shares)
-
-        * Hang Seng Options (hsoption): ETF options
+        * Guotai Junan ([hft](https://www.github.com/vnpy/vnpy_hft)): domestic securities (A shares)
+        
+        * SGIT ([sgit](https://www.github.com/vnpy/vnpy_sgit)): spot precious metal, domestic futures
 
         * Huaxin Singularity (tora): Domestic securities (A shares), ETF options
 
@@ -138,7 +140,7 @@ For financial institution users of vn.py, a special 【vn.py Institutional Users
 
     * chart_wizard: K-line chart module, based on RQData data service (futures) or trading interface (digital currency) to obtain historical data, and combined with Tick push to display real-time market changes
 
-    * portfolio_manager: portfolio module, for all kinds of fundamental trading strategies, based on separate strategy sub-accounts, providing automatic tracking of trading positions and real-time profit and loss statistics
+    * [rpc_service](https://www.github.com/vnpy/vnpy_rpcservice): RPC service module, allowing a VeighNa Trader process to be started as a server, serving as a unified routing channel for quotes and trades, allowing multiple clients to connect at the same time, realizing a multi-process distributed system
 
     * rpc_service: RPC service module, allowing a VN Trader process to be started as a server, serving as a unified routing channel for quotes and trades, allowing multiple clients to connect at the same time, realizing a multi-process distributed system
 
@@ -176,12 +178,18 @@ For financial institution users of vn.py, a special 【vn.py Institutional Users
 
 8. [Community Forum](http://www.vnpy.com) and [Zhihu Column](http://zhuanlan.zhihu.com/vn-py), which include the development tutorial of vn.py project and the research on the application of Python in the field of quantitative trading, etc.
 
-9. The official communication group 262656087 (QQ), with strict management (regular purging of long-term diving members), and the membership fee will be donated to the vn.py community fund.
+8. Standard component for inter-process communication (vnpy.rpc) for implementing complex trading systems in distributed deployments
+
+9. Python high-performance K-line charts (vnpy.chart), supporting large data volume chart display and real-time data update functions
+
+10.  [Community Forum](http://www.vnpy.com) and [Zhihu Blog](http://zhuanlan.zhihu.com/vn-py), which include the development tutorial of VeighNa project and the research on the application of Python in the field of quantitative trading, etc.
+
+11. The official communication group 262656087 (QQ), with strict management (regular purging of long-term diving members), and the membership fee will be donated to the VeighNa community fund.
 
 ## Environment preparation
 
-* We recommend using the Python distribution [VNStudio-2.3.0](https://download.vnpy.com/vnstudio-2.3.0.exe), which is built with the latest version of vn.py framework and VN Station quantitative management platform, specifically created by the vn.py team for quantitative trading. Manual installation
-* Supported system versions: Windows 7 or above/Windows Server 2008 or above/Ubuntu 18.04 LTS
+* We recommend using the Python distribution [VeighNa Studio-2.9.0](https://download.vnpy.com/veighna-studio-2.9.0.exe), which is built with the latest version of VeighNa framework and VeighNa Station quantitative management platform, specifically created by the VeighNa team for quantitative trading. Manual installation
+* Supported system versions: Windows 10 or above/Windows Server 2016 or above/Ubuntu 20.04 LTS
 * Supported Python version: Python 3.7 64-bit (**Note that it must be Python 3.7 64-bit version**)
 
 ## Installation steps
@@ -200,20 +208,20 @@ Download the latest version from [here](https://github.com/vnpy/vnpy/releases), 
 
 1. Register a CTP Demo account at [SimNow](http://www.simnow.com.cn/) and get the broker code and the trading quotes server address at [this page](http://www.simnow.com.cn/product.action).
 
-2. Register at [vn.py community forum](https://www.vnpy.com/forum/) to get the VN Station account password (the forum account password is)
+2. Register at [VeighNa community forum](https://www.vnpy.com/forum/) to get the VeighNa Station account password (the forum account password is)
 
-3. Launch VN Station (a shortcut will be created automatically on your desktop after installing VN Studio), enter the account password from the previous step and login
+3. Launch VeighNa Station (a shortcut will be created automatically on your desktop after installing VeighNa Studio), enter the account password from the previous step and login
 
-4. Click on the **VN Trader Lite** button at the bottom and start your trading!
+4. Click on the **VeighNa Trader** button at the bottom and start your trading!
 
 Attention.
 
-* Please do not close VN Station during the running of VN Trader (it will exit automatically)
-* For flexible configuration of quantitative trading application components, please use **VN Trader Pro**
+* Please do not close VeighNa Station during the running of VeighNa Trader (it will exit automatically)
+* For flexible configuration of quantitative trading application components, please use **VeighNa Trader**
 
 ## Script Run
 
-In addition to the graphical start-up method based on VN Station, you can also create run.py in any directory and write the following sample code.
+In addition to the graphical start-up method based on VeighNa Station, you can also create run.py in any directory and write the following sample code.
 
 ```Python
 from vnpy.event import EventEngine
@@ -243,17 +251,17 @@ def main():
     main()
 ```
 
-Open CMD in that directory (hold Shift->click right mouse button->open command window/PowerShell here) and then run the following command to start VN Trader.
+Open CMD in that directory (hold Shift->click right mouse button->open command window/PowerShell here) and then run the following command to start VeighNa Trader.
 
     python run.py
     
 ## Contributing code
 
-vn.py uses Github to host its source code, if you wish to contribute code please use the PR (Pull Request) process of github:
+VeighNa uses Github to host its source code, if you wish to contribute code please use the PR (Pull Request) process of github:
 
 1. [create Issue](https://github.com/vnpy/vnpy/issues/new) - For the larger changes (such as new features, large refactoring, etc.) it is best to first open an issue to discuss, and smaller improvements (such as document improvements, bugfixes, etc.) can be sent directly to PR
 
-2. Fork [vn.py](https://github.com/vnpy/vnpy) - Click the **Fork** button in the upper right corner
+2. Fork [VeighNa](https://github.com/vnpy/vnpy) - Click the **Fork** button in the upper right corner
 
 3. CloneYour own fork: ```git clone https://github.com/$userid/vnpy.git```
 

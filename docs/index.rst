@@ -1,12 +1,14 @@
-vn.py项目文档
+VeighNa项目文档
 ~~~~~~~~~
 
 .. toctree::
    :maxdepth: 2
 
    introduction.md
-   install.md
-   quickstart.md
+   windows_install.md
+   ubuntu_install.md
+   veighna_station.md
+   veighna_trader.md
    gateway.md
    database.md
 

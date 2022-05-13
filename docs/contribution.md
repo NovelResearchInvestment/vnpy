@@ -2,15 +2,16 @@
 
 ---
 ## 创建PR
-我们欢迎任何人贡献代码到vn.py。  
-如果希望贡献代码请使用github的PR(Pull Request)的流程。
+我们欢迎任何人贡献代码到VeighNa。  
+
+如果希望贡献代码请使用Github的PR(Pull Request)的流程。
 
 PR流程大致如下：
 
 ---
-1. [创建 Issue][CreateIssue] - 对于较大的改动(如新功能，大型重构等)最好先开issue讨论一下， 较小的improvement(如文档改进，bugfix等)直接发PR即可
+1. [创建 Issue][CreateIssue] - 对于较大的改动(如新功能，大型重构等)建议先开issue讨论一下， 较小的improvement(如文档改进，bugfix等)直接发PR即可
 
-2. Fork [vn.py][#GithubVnpy] - 点击右上角**Fork**按钮
+2. Fork [VeighNa][#GithubVnpy] - 点击右上角**Fork**按钮
 
 3. Clone你自己的fork: ```git clone https://github.com/$userid/vnpy.git```
 	> 如果你的fork已经过时，需要手动[sync][GithubDocForSync]
@@ -29,7 +30,7 @@ PR流程大致如下：
 
 ---
 ## 代码风格
-在为vn.py写代码的时候，需要遵循一些基本的规则，否则你的代码可能无法被merge。
+在为VeighNa写代码的时候，需要遵循一些基本的规则，否则你的代码可能无法被merge。
 这些规则包括：
 1. [命名规则](#命名规则)
 2. [代码格式](#代码格式)
@@ -44,8 +45,8 @@ PR流程大致如下：
 * 常量使用大写加下划线的形式
 
 例如：
-```python
-DEFAULT_PATH = "/tmp/vn.py/"
+```python 3
+DEFAULT_PATH = "/tmp/VeighNa/"
 class ClassA:
     def __init__(self, arg_one: int, arg_two: str):
         if arg_two is None:
@@ -56,7 +57,7 @@ class ClassA:
 
 
 ### 代码格式
-我们对代码格式没有特别严格的要求，但是至少要符合pep8标准，并且额外要在类和所有函数下面带上docstring(就是一段"""""")。
+我们对代码格式没有特别严格的要求，但是至少要符合pep8标准，并且额外要在类和函数下面带上docstring(就是一段"""""")。
 
 要让代码符合pep8标准，写完代码之后使用[autopep8](https://github.com/hhatto/autopep8)格式化你的代码就可以了:  
 ```bash

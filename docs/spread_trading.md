@@ -1,16 +1,16 @@
-# SpreadTrading - 价差交易模块
+# SpreadTrading - 多合约价差套利模块
 
 
 ## 功能简介
 
-SpreadTrading是用于**价差交易**的功能模块，用户可以通过图形界面操作来便捷创建灵活的价差合约、完成手动交易和自动交易等任务。
+SpreadTrading是用于**多合约价差套利**的功能模块，用户可以通过其UI界面操作来便捷创建灵活的价差合约、完成手动交易和自动交易等任务。
 
 
 ## 加载启动
 
-### VN Station加载
+### VeighNa Station加载
 
-启动登录VN Station后，点击【VN Trader Pro】按钮，在配置对话框中的【上层应用】栏勾选【SpreadTrading】。
+启动登录VeighNa Station后，点击【交易】按钮，在配置对话框中的【应用模块】栏勾选【SpreadTrading】。
 
 ### 脚本加载
 
@@ -27,7 +27,21 @@ main_engine.add_app(spread_trading)
 
 ## 启动模块
 
-在启动模块之前，请先连接交易接口（连接方法详见基本使用篇的连接接口部分）。看到VN Trader主界面【日志】栏输出“合约信息查询成功”之后再启动模块，如下图所示：
+<span id="jump">
+
+对于用户自行开发的策略，需要放到VeighNa Trader运行时目录下的**strategies**目录中，才能被识别加载。具体的运行时目录路径，可以在VeighNa Trader主界面顶部的标题栏查看。
+
+对于在Windows上默认安装的用户来说，放置策略的strategies目录路径通常为：
+
+```bash
+    C:\Users\Administrator\strategies
+```
+
+其中Administrator为当前登录Windows的系统用户名。
+
+</span>
+
+在启动模块之前，请先连接交易接口（连接方法详见基本使用篇的连接接口部分）。看到VeighNa Trader主界面【日志】栏输出“合约信息查询成功”之后再启动模块（**如果在合约信息查询成功之前打开模块，可能会导致价差的价格跳动取值为零，进而在委托成交之后引发底层报错**），如下图所示：
 
 ![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/cta_strategy/1.png)
 
@@ -53,7 +67,7 @@ main_engine.add_app(spread_trading)
 
 在创建价差合约前，用户可以通过【查询合约】功能，寻找可以组成价差的合约：
 
-- 在VN Trader菜单栏中点击【帮助】-> 【查询合约】按钮，弹出合约查询界面，如下图所示：
+- 在VeighNa Trader菜单栏中点击【帮助】-> 【查询合约】按钮，弹出合约查询界面，如下图所示：
 ![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/spread_trading/3.png)
 - 在界面中找到可用于组成价差交易的合约；
 - 本文档以豆油期货的跨期套利来展示，即交易y2105.DCE（豆油期货21年5月到期合约）和y2109.DCE（豆油期货21年12月到期合约）。
@@ -147,9 +161,12 @@ main_engine.add_app(spread_trading)
 
 此时各监控组件状态如下所示：
 
-- 【日志】组件显示买入y_05_09价差合约的顺序是：发出y2105多头委托 -> y2105委托成交 -> 发出y2109空头委托 -> y2109委托成交。价差交易必须遵循的逻辑是主动腿成交后，才去用被动腿来对冲头寸，并且对冲必须尽可能及时。这也为什么一般被动腿选择较为活跃合约的原因。
-- 【价差】组件显示买入1手豆油期货价差合约成交后，【净仓】从0变成1。实际上，VN Trader【持仓】组件显示，y2105合约多头持仓1手，y2109合约空头持仓1手。
-- 【算法】组件显示本次委托SpreadTaker算法执行情况：成交数量1手，委托状态是全部成交。
+- 日志组件
+  - 买入y_05_09价差合约的顺序是：发出y2205多头委托 -> y2205委托成交 -> 发出y2209空头委托 -> y2209委托成交。价差交易必须遵循的逻辑是主动腿成交后，才去用被动腿来对冲头寸，并且对冲必须尽可能及时。这也是为什么一般被动腿会选择较为活跃合约的原因。
+- 价差组件
+  - 买入1手豆油期货价差合约成交后，【净仓】从0变成1。实际上，VeighNa Trader【持仓】组件显示，y2205合约多头持仓1手，y2209合约空头持仓1手。
+- 算法组件
+  - 本次委托SpreadTaker算法执行情况：成交数量1手，委托状态是【全部成交】。
 
 ### 发出委托等待成交
 
@@ -162,7 +179,7 @@ main_engine.add_app(spread_trading)
 - 【日志】组件显示本次算法即SpreadTaker_000002已经启动，但由于价格没有触发到目标价位，算法在循环读秒中处于等待状态；
 - 【算法】组件显示其委托状态为"未成交"，要结束算法只需鼠标双击【SpreadTaker_000002】单元格即可。
 
-仅当卖价低于-300时，才出发该限价单，已超价5元，即-295去主动成交。
+仅当卖价低于-300时，才触发该限价单，已超价5元，即-295去主动成交。
 
 ### 撤销委托
 
@@ -211,12 +228,15 @@ main_engine.add_app(spread_trading)
 
 ![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/spread_trading/13.png)
 
-
-此时，【算法】组件显示，test策略调用SpreadTaker算法，分别在600和-300的位子上挂上买入和卖出委托；由于实际价格没有达到这2个阈值，故委托一直挂着，其委托状态为"未成交"。
+此时，【算法】组件显示，test策略调用SpreadTaker算法，分别在-300和800的位子上挂上买入和卖出委托；由于实际价格没有达到这2个阈值，故委托一直挂着，其委托状态为【未成交】。
 
 ![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/spread_trading/14.png)
 
-### 停止策略
+【策略】组件中【trading】字段从【False】变为【True】，如下图所示：
+
+![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/spread_trading/24.png)
+
+#### 停止
 
 若要停止策略，点击策略实例下的【停止】按钮，即可停止该策略实例的自动交易。【日志】组件输出“算法已停止”，如下图所示：
 
@@ -248,7 +268,7 @@ main_engine.add_app(spread_trading)
 
 ## 价差交易策略模板
 
-价差交易策略模板提供完整的信号生成和委托管理功能，用户可以基于该模板(位于vnpy.app.spread_trading.template中)自行开发策略。
+价差交易策略模板提供了信号生成和委托管理功能，用户可以基于该模板(位于vnpy_spreadtrading.template中)自行开发策略。
 
 用户自行开发的策略可以放在用户运行文件夹下的strategies文件夹内。
 请注意，策略文件命名采用下划线模式，如basic_spread_strategy.py，而策略类命名采用驼峰式，如BasicSpreadStrategy。
@@ -260,7 +280,7 @@ BasicSpreadStrategy策略逻辑假设价差满足均值回归，即价差围绕�
 - 在价差合约的价格低位买入开仓（BUY），然后在接近均值时候卖出平仓（SELL）；
 - 在合约价格高位卖出开仓（SHORT），然后在价格走低接近均值买入平仓（COVER）。
 
-若价差均值并不是围绕某个固定数值波动，或者能够持续走出趋势，则需要更加复杂的策略，如价差的布林带策略等等。这些个性化策略，用户可以基于SpreadStrategyTemplate策略模板自己实现。
+目前，VeighNa官方提供两个价差策略，即BasicSpreadStrategy和StatisticalArbitrageStrategy。下面通过StatisticalArbitrageStrategy示例，来展示策略开发的具体步骤：
 
 在基于价差交易策略模板编写策略逻辑之前，需要在策略文件的顶部载入需要用到的内部组件，如下方代码所示：
 
@@ -352,9 +372,17 @@ def __init__(
         strategy_engine, strategy_name, spread, setting
     )
 
-    self.start_t = datetime.strptime(self.start_time, "%H:%M:%S").time()
-    self.end_t = datetime.strptime(self.end_time, "%H:%M:%S").time()
-```
+1 . 通过super( )的方法继承SpreadStrategyTemplate，在__init__( )函数中传入策略引擎、策略名称、价差以及参数设置（以上参数均由策略引擎在使用策略类创建策略实例时自动传入，用户无需进行设置）；
+
+2 . 调用K线生成模块（BarGenerator）：通过时间切片将Tick数据合成1分钟K线数据。如有需求，还可合成更长的时间周期数据。
+
+3 . 调用K线时间序列管理模块（ArrayManager）：基于K线数据将其转化为便于向量化计算的时间序列数据结构，并在内部支持使用talib库来计算相应的技术指标。
+
+ArrayManager的默认长度为100，如需调整ArrayManager的长度，可传入size参数进行调整（size不能小于计算指标的周期长度）。
+
+### 价差策略引擎调用的函数
+
+SpreadStrategyTemplate中的update_setting函数、该函数后面四个以get开头的函数和后面两个以update开头的函数，都是价差策略引擎去负责调用的函数，一般在策略编写的时候是不需要调用的。
 
 ### 策略的回调函数
 
@@ -512,3 +540,161 @@ stop_close_algos
 
 负责撤销平仓委托。
 
+* 出参：无
+
+stop_algo和stop_all_algos都是负责停止价差算法的交易请求类函数。stop_algo是停止策略内指定的价差算法，stop_all_algos是停止策略所有的活动价差算法。
+
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能撤单。
+
+**buy**：买入开仓（Direction：LONG，Offset：OPEN）
+
+**sell**：卖出平仓（Direction：SHORT，Offset：CLOSE）
+
+**short**：卖出开仓（Direction：SHORT，Offset：OPEN）
+
+**cover**：买入平仓（Direction：LONG，Offset：CLOSE）
+
+* 入参：vt_symbol: str, price: float, volume: float, lock: bool = False
+
+* 出参：vt_orderids: List[vt_orderid] / 无 
+
+buy/sell/short/cover都是策略内部的负责针对特定合约发出底层交易委托的请求类函数。策略可以通过这些函数给价差策略引擎发送交易信号来达到下单的目的。
+
+以下方buy函数的代码为例，可以看到，本地代码、价格和数量是必填的参数，锁仓转换则默认为False。也可以看到，函数内部收到传进来的参数之后就调用了SpreadStrategyTemplate里的send_order函数来发单（因为是buy指令，则自动把方向填成了LONG，开平填成了OPEN）
+
+如果lock设置为True，那么该笔订单则会进行锁仓委托转换（在有今仓的情况下，如果想平仓，则会先平掉所有的昨仓，然后剩下的部分都进行反向开仓来代替平今仓，以避免平今的手续费惩罚）。
+
+```python 3
+    def buy(self, vt_symbol: str, price: float, volume: float, lock: bool = False) -> List[str]:
+        """"""
+        return self.send_order(vt_symbol, price, volume, Direction.LONG, Offset.OPEN, lock)
+```
+
+**send_order**
+
+* 入参：vt_symbol: str, price: float, volume: float, direction: Direction, offset: Offset, lock: bool = False
+
+* 出参：vt_orderids / 无
+
+send_order函数是价差策略引擎调用的针对特定合约（**而不是价差**）发送委托的函数。一般在策略编写的时候不需要单独调用，通过buy/sell/short/cover函数发送委托即可。
+
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能发出交易委托。如果策略的Trading状态为【False】时调用了该函数，只会返回[]。
+
+**cancel_order**
+
+* 入参：vt_orderid: str
+
+* 出参：无
+
+**cancel_all**
+
+* 入参：无
+
+* 出参：无
+
+cancel_order和cancel_all都是负责撤单的交易请求类函数。cancel_order是撤掉策略内指定的活动委托，cancel_all是撤掉策略所有的活动委托。
+
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能撤单。
+
+### 功能函数
+
+以下为策略以外的功能函数：
+
+**put_event**
+
+* 入参：无
+
+* 出参：无
+
+在策略中调用put_event函数，可以通知图形界面刷新策略状态相关显示。
+
+请注意，要策略初始化完成，inited状态变为【True】之后，才能刷新界面。
+
+**write_log**
+
+* 入参：msg: str
+
+* 出参：无
+
+在策略中调用write_log函数，可以进行指定内容的日志输出。
+
+**get_spread_tick**
+
+* 入参：无
+
+* 出参：tick: TickData
+
+在策略里调用get_spread_tick函数，可以获取价差Tick数据。
+
+**get_spread_pos**
+
+* 入参：无
+
+* 出参：spread_pos: float
+
+在策略里调用get_spread_pos函数，可以获取价差净持仓数据。
+
+**get_leg_tick**
+
+* 入参：vt_symbol: str
+
+* 出参：leg.tick: TickData / None
+
+在策略里调用get_leg_tick函数，可以获取特定合约的Tick数据。
+
+**get_leg_pos**
+
+* 入参：vt_symbol: str, direction: Direction = Direction.NET
+
+* 出参：leg.net_pos: float / leg.long_pos: float /leg.short_pos: float / None
+
+在策略里调用get_leg_pos函数，可以获取特定合约的持仓数据，用于处理瘸腿后的细粒度调整。
+
+**send_email**
+
+* 入参：msg: str
+
+* 出参：无
+
+配置好邮箱相关信息之后（配置方法详见基本使用篇的全局配置部分），在策略中调用send_email函数，可以发送指定内容的邮件到自己的邮箱。
+
+请注意，要策略初始化完成，inited状态变为【True】之后，才能发送邮件。
+
+**load_bar**
+
+* 入参：days: int, interval: Interval = Interval.MINUTE, callback: Callable = None
+
+* 出参：无
+
+在策略中调用load_bar函数，可以在策略初始化时加载价差K线数据。
+
+如下方代码所示，load_bar函数调用时，默认加载的天数是10，频率是一分钟，对应也就是加载10天的1分钟K线数据。在回测时，10天指的是10个交易日，而在实盘时，10天则是指的是自然日，因此建议加载的天数宁可多一些也不要太少。加载时会先依次尝试通过交易接口、数据服务、数据库获取历史数据，直到获取历史数据或返回空。
+
+请注意，回测期内每条腿的K线数据（1分钟最佳），若有某条腿缺失一段，则所有腿的这一段数据都会被弃用。
+
+```python 3
+    def load_bar(
+        self,
+        days: int,
+        interval: Interval = Interval.MINUTE,
+        callback: Callable = None,
+    ):
+        """
+        Load historical bar data for initializing strategy.
+        """
+        if not callback:
+            callback = self.on_spread_bar
+
+        self.strategy_engine.load_bar(self.spread, days, interval, callback)
+```
+
+**load_tick**
+
+* 入参：days: int
+
+* 出参：无
+
+价差Tick数据来源：
+首先需要在SpreadTrading模块中创建配置好价差后，通过DataRecorder模块来进行Tick录制，本地代码填入xx-spread.LOCAL，其中xx-spread为用户定义的价差名称，LOCAL为固定交易所后缀（代表本地生成）。
+
+在策略中调用load_tick函数，可以在策略初始化时去数据库加载录制好的价差Tick盘口数据。

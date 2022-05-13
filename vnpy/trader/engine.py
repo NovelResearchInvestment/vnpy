@@ -1,12 +1,10 @@
-"""
-"""
-
 import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
 import smtplib
 import os
 from abc import ABC
+from pathlib import Path
 from datetime import datetime
 from email.message import EmailMessage
 from queue import Empty, Queue
@@ -52,7 +50,7 @@ class MainEngine:
     Acts as the core of VN Trader.
     """
 
-    def __init__(self, event_engine: EventEngine = None):
+    def __init__(self, event_engine: EventEngine = None) -> None:
         """"""
         if event_engine:
             self.event_engine: EventEngine = event_engine
@@ -76,16 +74,20 @@ class MainEngine:
         """
         Add function engine.
         """
-        engine = engine_class(self, self.event_engine)
+        engine: BaseEngine = engine_class(self, self.event_engine)
         self.engines[engine.engine_name] = engine
         return engine
 
-    def add_gateway(self, gateway_class: Type[BaseGateway]) -> BaseGateway:
+    def add_gateway(self, gateway_class: Type[BaseGateway], gateway_name: str = "") -> BaseGateway:
         """
         Add gateway.
         """
-        gateway = gateway_class(self.event_engine)
-        self.gateways[gateway.gateway_name] = gateway
+        # Use default name if gateway_name not passed
+        if not gateway_name:
+            gateway_name: str = gateway_class.default_name
+
+        gateway: BaseGateway = gateway_class(self.event_engine, gateway_name)
+        self.gateways[gateway_name] = gateway
 
         # Add gateway supported exchanges into engine
         for exchange in gateway.exchanges:
@@ -98,10 +100,10 @@ class MainEngine:
         """
         Add app.
         """
-        app = app_class()
+        app: BaseApp = app_class()
         self.apps[app.app_name] = app
 
-        engine = self.add_engine(app.engine_class)
+        engine: BaseEngine = self.add_engine(app.engine_class)
         return engine
 
     def init_engines(self) -> None:
@@ -116,15 +118,15 @@ class MainEngine:
         """
         Put log event with specific message.
         """
-        log = LogData(msg=msg, gateway_name=source)
-        event = Event(EVENT_LOG, log)
+        log: LogData = LogData(msg=msg, gateway_name=source)
+        event: Event = Event(EVENT_LOG, log)
         self.event_engine.put(event)
 
     def get_gateway(self, gateway_name: str) -> BaseGateway:
         """
         Return gateway object by name.
         """
-        gateway = self.gateways.get(gateway_name, None)
+        gateway: BaseGateway = self.gateways.get(gateway_name, None)
         if not gateway:
             self.write_log(f"找不到底层接口：{gateway_name}")
         return gateway
@@ -133,7 +135,7 @@ class MainEngine:
         """
         Return engine object by name.
         """
-        engine = self.engines.get(engine_name, None)
+        engine: BaseEngine = self.engines.get(engine_name, None)
         if not engine:
             self.write_log(f"找不到引擎：{engine_name}")
         return engine
@@ -142,7 +144,7 @@ class MainEngine:
         """
         Get default setting dict of a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.get_default_setting()
         return None
@@ -169,7 +171,7 @@ class MainEngine:
         """
         Start connection of a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             gateway.connect(setting)
 
@@ -177,7 +179,7 @@ class MainEngine:
         """
         Subscribe tick data update of a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             gateway.subscribe(req)
 
@@ -185,7 +187,7 @@ class MainEngine:
         """
         Send new order request to a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.send_order(req)
         else:
@@ -195,7 +197,7 @@ class MainEngine:
         """
         Send cancel order request to a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             gateway.cancel_order(req)
 
@@ -203,7 +205,7 @@ class MainEngine:
         """
         Send new quote request to a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.send_quote(req)
         else:
@@ -213,7 +215,7 @@ class MainEngine:
         """
         Send cancel quote request to a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             gateway.cancel_quote(req)
 
@@ -221,7 +223,7 @@ class MainEngine:
         """
         Query bar history data from a specific gateway.
         """
-        gateway = self.get_gateway(gateway_name)
+        gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.query_history(req)
         else:
@@ -252,13 +254,13 @@ class BaseEngine(ABC):
         main_engine: MainEngine,
         event_engine: EventEngine,
         engine_name: str,
-    ):
+    ) -> None:
         """"""
-        self.main_engine = main_engine
-        self.event_engine = event_engine
-        self.engine_name = engine_name
+        self.main_engine: MainEngine = main_engine
+        self.event_engine: EventEngine = event_engine
+        self.engine_name: str = engine_name
 
-    def close(self):
+    def close(self) -> None:
         """"""
         pass
 
@@ -268,7 +270,7 @@ class LogEngine(BaseEngine):
     Processes log event and output with logging module.
     """
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super(LogEngine, self).__init__(main_engine, event_engine, "log")
 
@@ -277,10 +279,10 @@ class LogEngine(BaseEngine):
 
         self.level: int = SETTINGS["log.level"]
 
-        self.logger: Logger = logging.getLogger("VN Trader")
+        self.logger: Logger = logging.getLogger("veighna")
         self.logger.setLevel(self.level)
 
-        self.formatter = logging.Formatter(
+        self.formatter: logging.Formatter = logging.Formatter(
             "%(asctime)s  %(levelname)s: %(message)s"
         )
 
@@ -298,14 +300,14 @@ class LogEngine(BaseEngine):
         """
         Add null handler for logger.
         """
-        null_handler = logging.NullHandler()
+        null_handler: logging.NullHandler = logging.NullHandler()
         self.logger.addHandler(null_handler)
 
     def add_console_handler(self) -> None:
         """
         Add console output of log.
         """
-        console_handler = logging.StreamHandler()
+        console_handler: logging.StreamHandler = logging.StreamHandler()
         console_handler.setLevel(self.level)
         console_handler.setFormatter(self.formatter)
         self.logger.addHandler(console_handler)
@@ -336,7 +338,7 @@ class LogEngine(BaseEngine):
         """
         Process log event.
         """
-        log = event.data
+        log: LogData = event.data
         self.logger.log(log.level, log.msg)
 
 
@@ -345,7 +347,7 @@ class OmsEngine(BaseEngine):
     Provides order management system function for VN Trader.
     """
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super(OmsEngine, self).__init__(main_engine, event_engine, "oms")
 
@@ -535,7 +537,7 @@ class OmsEngine(BaseEngine):
         if not vt_symbol:
             return list(self.active_orders.values())
         else:
-            active_orders = [
+            active_orders: List[OrderData] = [
                 order
                 for order in self.active_orders.values()
                 if order.vt_symbol == vt_symbol
@@ -545,13 +547,12 @@ class OmsEngine(BaseEngine):
     def get_all_active_quotes(self, vt_symbol: str = "") -> List[QuoteData]:
         """
         Get all active quotes by vt_symbol.
-
         If vt_symbol is empty, return all active qutoes.
         """
         if not vt_symbol:
             return list(self.active_quotes.values())
         else:
-            active_quotes = [
+            active_quotes: List[QuoteData] = [
                 quote
                 for quote in self.active_quotes.values()
                 if quote.vt_symbol == vt_symbol
@@ -564,7 +565,7 @@ class EmailEngine(BaseEngine):
     Provides email sending function for VN Trader.
     """
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super(EmailEngine, self).__init__(main_engine, event_engine, "email")
 
@@ -582,9 +583,9 @@ class EmailEngine(BaseEngine):
 
         # Use default receiver if not specified.
         if not receiver:
-            receiver = SETTINGS["email.receiver"]
+            receiver: str = SETTINGS["email.receiver"]
 
-        msg = EmailMessage()
+        msg: EmailMessage = EmailMessage()
         msg["From"] = SETTINGS["email.sender"]
         msg["To"] = receiver
         msg["Subject"] = subject
@@ -596,7 +597,7 @@ class EmailEngine(BaseEngine):
         """"""
         while self.active:
             try:
-                msg = self.queue.get(block=True, timeout=1)
+                msg: EmailMessage = self.queue.get(block=True, timeout=1)
 
                 with smtplib.SMTP_SSL(
                     SETTINGS["email.server"], SETTINGS["email.port"]
