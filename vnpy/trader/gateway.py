@@ -12,6 +12,7 @@ from .event import (
     EVENT_CONTRACT,
     EVENT_LOG,
     EVENT_QUOTE,
+    EVENT_SETTLEMENT,
 )
 from .object import (
     TickData,
@@ -28,7 +29,8 @@ from .object import (
     HistoryRequest,
     QuoteRequest,
     Exchange,
-    BarData
+    BarData,
+    SettlementData,
 )
 
 
@@ -151,6 +153,12 @@ class BaseGateway(ABC):
         Contract event push.
         """
         self.on_event(EVENT_CONTRACT, contract)
+
+    def on_settlement_info(self, settlement: SettlementData) -> None:
+        """
+        Settlement event push.
+        """
+        self.on_event(EVENT_SETTLEMENT, settlement)
 
     def write_log(self, msg: str) -> None:
         """

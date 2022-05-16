@@ -430,3 +430,23 @@ class ResponseContainer:
     def store(self, data, request):
         self.results['data'] = data
         self.results['request'] = request
+
+
+@dataclass
+class SettlementData(BaseData):
+    """
+    Settlement data ...
+    """
+
+    TradingDay: str
+    SettlementID: str
+    BrokerID: int
+    InvestorID: int
+    SequenceNo: int
+    Content: str
+    vt_reqid: int = -1
+
+    def __post_init__(self) -> None:
+        """"""
+        self.time: datetime = datetime.now()
+        self.vt_settlementid: str = f"{self.BrokerID}_{self.InvestorID}_{self.TradingDay}"

@@ -21,7 +21,8 @@ from .event import (
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
     EVENT_LOG,
-    EVENT_QUOTE
+    EVENT_QUOTE,
+    EVENT_SETTLEMENT
 )
 from .gateway import BaseGateway
 from .object import (
@@ -39,7 +40,8 @@ from .object import (
     PositionData,
     AccountData,
     ContractData,
-    Exchange
+    Exchange,
+    SettlementData,
 )
 from .setting import SETTINGS
 from .utility import get_folder_path, TRADER_DIR
@@ -358,6 +360,7 @@ class OmsEngine(BaseEngine):
         self.accounts: Dict[str, AccountData] = {}
         self.contracts: Dict[str, ContractData] = {}
         self.quotes: Dict[str, QuoteData] = {}
+        self.settlements: Dict[str, SettlementData] = {}
 
         self.active_orders: Dict[str, OrderData] = {}
         self.active_quotes: Dict[str, QuoteData] = {}
@@ -385,6 +388,10 @@ class OmsEngine(BaseEngine):
         self.main_engine.get_all_active_orders = self.get_all_active_orders
         self.main_engine.get_all_active_qutoes = self.get_all_active_quotes
 
+        self.main_engine.get_settlements = self.get_settlements
+        self.main_engine.get_settlement_content = self.get_settlement_content
+        self.main_engine.get_all_settlements = self.get_all_settlements
+
     def register_event(self) -> None:
         """"""
         self.event_engine.register(EVENT_TICK, self.process_tick_event)
@@ -394,6 +401,7 @@ class OmsEngine(BaseEngine):
         self.event_engine.register(EVENT_ACCOUNT, self.process_account_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
         self.event_engine.register(EVENT_QUOTE, self.process_quote_event)
+        self.event_engine.register(EVENT_SETTLEMENT, self.process_settlement_event)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
@@ -444,6 +452,16 @@ class OmsEngine(BaseEngine):
         elif quote.vt_quoteid in self.active_quotes:
             self.active_quotes.pop(quote.vt_quoteid)
 
+    def process_settlement_event(self, event: Event) -> None:
+        """"""
+        if event.data:
+            settlement: SettlementData = event.data
+            vt_settlementid = f"{settlement.BrokerID}_{settlement.InvestorID}_{settlement.TradingDay}"
+            if vt_settlementid in self.settlements:
+                self.settlements[vt_settlementid].append(settlement)
+            else:
+                self.settlements[vt_settlementid] = [settlement]
+
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """
         Get latest market tick data by vt_symbol.
@@ -485,6 +503,26 @@ class OmsEngine(BaseEngine):
         Get latest quote data by vt_orderid.
         """
         return self.quotes.get(vt_quoteid, None)
+
+    def get_settlements(self, vt_settlementid: str) -> Optional[SettlementData]:
+        """
+        Get latest quote data by vt_orderid.
+        """
+        return self.settlements.get(vt_settlementid, None)
+
+    def get_settlement_content(self, vt_settlementid: str) -> Optional[SettlementData]:
+        """
+        Get latest quote data by vt_orderid.
+        """
+        settlements = self.get_settlements(vt_settlementid)
+        content_strings = "".join([sett.Content for sett in settlements])
+        return content_strings
+
+    def get_all_settlements(self):
+        """
+        Get latest quote data by vt_orderid.
+        """
+        return self.settlements
 
     def get_all_ticks(self) -> List[TickData]:
         """
