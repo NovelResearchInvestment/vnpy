@@ -1,18 +1,25 @@
-# 多合约组合策略模块
+# PortfolioStrategy - 多合约组合策略模块
 
-## 策略开发
-多合约组合策略模板提供完整的信号生成和委托管理功能，用户可以基于该模板自行开发策略。新策略可以放在用户运行的文件内（推荐），如在c:\users\administrator.vntrader目录下创建strategies文件夹；可以放在根目录下vnpy\app\portfolio_strategy\strategies文件夹内。
-注意：策略文件命名是以下划线模式，如pair_trading_strategy.py；而策略类命名采用的是驼峰式，如PairTradingStrategy。
+## 功能简介
 
 PortfolioStrategy是用于**多合约组合策略实盘**的功能模块，用户可以通过其UI界面操作来便捷完成策略初始化、策略启动、策略停止、策略参数编辑以及策略移除等任务。
 
-### 参数设置
+## 加载启动
 
 ### VeighNa Station加载
 
 启动登录VeighNa Station后，点击【交易】按钮，在配置对话框中的【应用模块】栏勾选【PortfolioStrategy】。
 
-创建策略实例的方法有效地实现了一个策略跑多个品种，并且其策略参数可以通过品种的特征进行调整。
+### 脚本加载
+
+在启动脚本中添加如下代码：
+
+```python 3
+# 写在顶部
+from vnpy_portfoliostrategy import PortfolioStrategyApp
+
+# 写在创建main_engine对象后
+main_engine.add_app(PortfolioStrategyApp)
 ```
 
 
@@ -228,7 +235,7 @@ PortfolioStrategy是用于**多合约组合策略实盘**的功能模块，用�
 
 ![](https://vnpy-doc.oss-cn-shanghai.aliyuncs.com/portfolio_strategy/21.png)
 
-## 多合约组合策略模板（StrategyTemplate）
+## 多合约组合策略模板（StrategyTemplate）-- 基础
 
 多合约组合策略模板提供了信号生成和委托管理功能，用户可以基于该模板(位于site-packages\vnpy_portfoliostrategy\template中)自行开发多合约组合策略。
 
@@ -271,28 +278,37 @@ from vnpy_portfoliostrategy.utility import PortfolioBarGenerator
     sl_multiplier = 5.2
     fixed_size = 1
     price_add = 5
-    boll_window = 20
-    boll_dev = 2
-    fixed_size = 1
-    leg1_ratio = 1
-    leg2_ratio = 1
 
-    leg1_symbol = ""
-    leg2_symbol = ""
-    current_spread = 0.0
-    boll_mid = 0.0
-    boll_down = 0.0
-    boll_up = 0.0
+    parameters = [
+        "boll_window",
+        "boll_dev",
+        "cci_window",
+        "atr_window",
+        "sl_multiplier",
+        "fixed_size",
+        "price_add"
+    ]
+    variables = []
+
 ```
+
+虽然策略的参数和变量都从属于策略类，但策略参数是固定的（由交易员从外部指定），而策略变量则在交易的过程中随着策略的状态而变化，所以策略变量一开始只需要初始化为对应的基础类型。例如：整数设为0，浮点数设为0.0，而字符串则设为""。
+
+如果需要策略引擎在运行过程中，将策略参数和变量显示在UI界面上，并在数据刷新、停止策略时保存其数值，则需把参数和变量的名字（以字符串的数据类型）添加进parameters和variables列表里。
+
+请注意，该列表只能接受参数或变量以str、int、float和bool四种数据类型传入。如果策略里需要用到其他数据类型的参数与变量，请把该参数或变量的定义放到__init__函数下。
 
 ### 类的初始化
-初始化：
 
-- 通过super( )的方法继承StrategyTemplate，在__init__( )函数传入Strategy引擎、策略名称、vt_symbols、参数设置。
-- 调用K线生成模块:通过时间切片来把Tick数据合成1分钟K线数据。
-- 如果需要，可以调用K线时间序列管理模块：基于K线数据，来生成相应的技术指标。
-  
-```
+入参：strategy_engine: StrategyEngine, strategy_name: str, vt_symbols: List[str], setting: dict
+
+出参：无
+
+__init__函数是策略类的构造函数，需要与继承的StrategyTemplate保持一致。
+
+在这个继承的策略类里，初始化一般分四步，如下方代码所示：
+
+```python 3
     def __init__(
         self,
         strategy_engine: StrategyEngine,
@@ -303,27 +319,25 @@ from vnpy_portfoliostrategy.utility import PortfolioBarGenerator
         """"""
         super().__init__(strategy_engine, strategy_name, vt_symbols, setting)
 
-        self.bgs: Dict[str, BarGenerator] = {}
+        self.boll_up: Dict[str, float] = {}
+        self.boll_down: Dict[str, float] = {}
+        self.cci_value: Dict[str, float] = {}
+        self.atr_value: Dict[str, float] = {}
+        self.intra_trade_high: Dict[str, float] = {}
+        self.intra_trade_low: Dict[str, float] = {}
+
         self.targets: Dict[str, int] = {}
         self.last_tick_time: datetime = None
 
-        self.spread_count: int = 0
-        self.spread_data: np.array = np.zeros(100)
-
-        # Obtain contract info
-        self.leg1_symbol, self.leg2_symbol = vt_symbols
-
-        def on_bar(bar: BarData):
-            """"""
-            pass
-
+        self.ams: Dict[str, ArrayManager] = {}
         for vt_symbol in self.vt_symbols:
+            self.ams[vt_symbol] = ArrayManager()
             self.targets[vt_symbol] = 0
-            self.bgs[vt_symbol] = BarGenerator(on_bar)
+
+        self.pbg = PortfolioBarGenerator(self.on_bars, 2, self.on_2hour_bars, Interval.HOUR)
 ```
 
-### 策略的初始化、启动、停止
-通过“多合约组合策略”组件的相关功能按钮实现。
+1 . 通过super( )的方法继承策略模板，在__init__( )函数中传入策略引擎、策略名称、vt_symbols以及参数设置（以上参数均由策略引擎在使用策略类创建策略实例时自动传入，用户无需进行设置）。
 
 2 . 创建策略所需的存放不同合约K线时间序列管理实例（ArrayManager）和策略变量的字典。
 
@@ -373,25 +387,48 @@ StrategyTemplate中以on开头的函数称为回调函数，在编写策略的�
         Callback when strategy is inited.
         """
         self.write_log("策略初始化")
+        self.load_bars(10)
+```
 
-        self.load_bars(1)
+与CTA策略不同，多合约组合策略只支持K线回测，所以多合约策略模板并没有load_ticks函数。
 
+策略初始化时，策略的inited和trading状态都为【False】，此时只是调用ArrayManager计算并缓存相关的计算指标，不能发出交易信号。调用完on_init函数之后，策略的inited状态才变为【True】，策略初始化才完成。
+
+**on_start**
+
+* 入参：无
+
+* 出参：无
+
+启动策略时on_start函数会被调用，默认写法是调用write_log函数输出“策略启动”日志，如下方代码所示：
+
+```python 3
     def on_start(self):
         """
         Callback when strategy is started.
         """
         self.write_log("策略启动")
+```
 
+调用策略的on_start函数启动策略后，策略的trading状态变为【True】，此时策略才能够发出交易信号。
+
+**on_stop**
+
+* 入参：无
+
+* 出参：无
+
+停止策略时on_stop函数会被调用，默认写法是调用write_log函数输出“策略停止”日志，如下方代码所示：
+
+```python 3
     def on_stop(self):
         """
         Callback when strategy is stopped.
         """
         self.write_log("策略停止")
 ```
-### Tick数据回报
-策略订阅某品种合约行情，交易所会推送Tick数据到该策略上。
 
-由于是基于1分钟K线来生成交易信号的，故收到Tick数据后，需要用到K线生成模块里面的update_tick函数，通过时间切片的方法，聚合成1分钟K线数据，并且推送到on_bars函数。
+调用策略的on_stop函数停止策略后，策略的trading状态变为【False】，此时策略就不会发出交易信号了。
 
 #### 接收数据、计算指标、发出交易信号
 
@@ -410,90 +447,83 @@ StrategyTemplate中以on开头的函数称为回调函数，在编写策略的�
         """
         Callback of new tick data update.
         """
-        if (
-            self.last_tick_time
-            and self.last_tick_time.minute != tick.datetime.minute
-        ):
-            bars = {}
-            for vt_symbol, bg in self.bgs.items():
-                bars[vt_symbol] = bg.generate()
-            self.on_bars(bars)
-
-        bg: BarGenerator = self.bgs[tick.vt_symbol]
-        bg.update_tick(tick)
-
-        self.last_tick_time = tick.datetime
+        self.pbg.update_tick(tick)
 ```
 
 请注意，on_tick函数只在实盘中会被调用，回测不支持。
 
-在回调函数on_bars中，同时收到所有合约的K线行情推送，并实现核心交易逻辑。调用buy/sell/short/cover/cancel_order等函数来发送交易请求。
+**on_bars**
 
-信号的生成，由3部分组成：
+* 入参：bars: Dict[str, BarData]
 
-- 清空未成交委托：为了防止之前下的单子在上一个5分钟没有成交，但是下一个5分钟可能已经调整了价格，就用cancel_all()方法立刻撤销之前未成交的所有委托，保证策略在当前这5分钟开始时的整个状态是清晰和唯一的。
-- 时间过滤：这里有用(bar.datetime.minute+1) % 5的逻辑来达到每5分钟推送一次的逻辑。
-- 指标计算：基于最新的5分钟K线数据来计算相应计算指标，如价差的布林带通道上下轨。
-- 信号计算：通过持仓的判断以及结合布林带通道上下轨，在通道突破点以及离场点设置目标仓位。
-- 仓位管理：基于目标仓位和现在持仓的差别来计算本次下单的数量并挂出委托（buy/sell)，同时设置离场点(short/cover)。
+* 出参：无
 
-```
+当策略收到最新的K线数据时（实盘时默认推进来的是基于Tick合成的一分钟的K线，回测时则取决于选择参数时填入的K线数据频率），on_bars函数就会被调用。
+
+与CTA策略模块不同，多合约组合策略模块在接收K线推送时，是通过on_bars回调函数一次性接收该时间点上所有合约的K线数据，而不是通过on_bar函数一个个接收（无法判断当前时点的K线是否全部走完了 ）。
+
+示例策略里出现过的写法有两种：
+
+1 . 如果策略基于on_bars推进来的K线交易，那么请把交易请求类函数都写在on_bars函数下（因本次示例策略类PortfolioBollChannelStrategy不是基于on_bars交易，故不作示例讲解。基于on_bars交易的示例代码可参考其他示例策略）；
+
+2 . 如果策略需要基于on_bars推进来的K线数据通过PortfolioBarGenerator合成更长时间周期的K线来交易，那么请在on_bars中调用PortfolioBarGenerator的update_bars函数，把收到的bars推进前面创建的pbg实例中即可，如下方代码所示：
+
+```python 3
     def on_bars(self, bars: Dict[str, BarData]):
+        """
+        Callback of new bars data update.
+        """
+        self.pbg.update_bars(bars)
+```
+
+示例策略类PortfolioBollChannelStrategy是通过2小时K线数据回报来生成信号的。一共有三部分，如下方代码所示：
+
+```python 3
+    def on_2hour_bars(self, bars: Dict[str, BarData]):
         """"""
         self.cancel_all()
 
-        # Return if one leg data is missing
-        if self.leg1_symbol not in bars or self.leg2_symbol not in bars:
-            return
+        for vt_symbol, bar in bars.items():
+            am: ArrayManager = self.ams[vt_symbol]
+            am.update_bar(bar)
 
-        # Calculate current spread
-        leg1_bar = bars[self.leg1_symbol]
-        leg2_bar = bars[self.leg2_symbol]
+        for vt_symbol, bar in bars.items():
+            am: ArrayManager = self.ams[vt_symbol]
+            if not am.inited:
+                return
 
-        # Filter time only run every 5 minutes
-        if (leg1_bar.datetime.minute + 1) % 5:
-            return
+            self.boll_up[vt_symbol], self.boll_down[vt_symbol] = am.boll(self.boll_window, self.boll_dev)
+            self.cci_value[vt_symbol] = am.cci(self.cci_window)
+            self.atr_value[vt_symbol] = am.atr(self.atr_window)
 
-        self.current_spread = (
-            leg1_bar.close_price * self.leg1_ratio - leg2_bar.close_price * self.leg2_ratio
-        )
+            current_pos = self.get_pos(vt_symbol)
+            if current_pos == 0:
+                self.intra_trade_high[vt_symbol] = bar.high_price
+                self.intra_trade_low[vt_symbol] = bar.low_price
 
-        # Update to spread array
-        self.spread_data[:-1] = self.spread_data[1:]
-        self.spread_data[-1] = self.current_spread
+                if self.cci_value[vt_symbol] > 0:
+                    self.targets[vt_symbol] = self.fixed_size
+                elif self.cci_value[vt_symbol] < 0:
+                    self.targets[vt_symbol] = -self.fixed_size
 
-        self.spread_count += 1
-        if self.spread_count <= self.boll_window:
-            return
+            elif current_pos > 0:
+                self.intra_trade_high[vt_symbol] = max(self.intra_trade_high[vt_symbol], bar.high_price)
+                self.intra_trade_low[vt_symbol] = bar.low_price
 
-        # Calculate boll value
-        buf: np.array = self.spread_data[-self.boll_window:]
+                long_stop = self.intra_trade_high[vt_symbol] - self.atr_value[vt_symbol] * self.sl_multiplier
 
-        std = buf.std()
-        self.boll_mid = buf.mean()
-        self.boll_up = self.boll_mid + self.boll_dev * std
-        self.boll_down = self.boll_mid - self.boll_dev * std
+                if bar.close_price <= long_stop:
+                    self.targets[vt_symbol] = 0
 
-        # Calculate new target position
-        leg1_pos = self.get_pos(self.leg1_symbol)
+            elif current_pos < 0:
+                self.intra_trade_low[vt_symbol] = min(self.intra_trade_low[vt_symbol], bar.low_price)
+                self.intra_trade_high[vt_symbol] = bar.high_price
 
-        if not leg1_pos:
-            if self.current_spread >= self.boll_up:
-                self.targets[self.leg1_symbol] = -1
-                self.targets[self.leg2_symbol] = 1
-            elif self.current_spread <= self.boll_down:
-                self.targets[self.leg1_symbol] = 1
-                self.targets[self.leg2_symbol] = -1
-        elif leg1_pos > 0:
-            if self.current_spread >= self.boll_mid:
-                self.targets[self.leg1_symbol] = 0
-                self.targets[self.leg2_symbol] = 0
-        else:
-            if self.current_spread <= self.boll_mid:
-                self.targets[self.leg1_symbol] = 0
-                self.targets[self.leg2_symbol] = 0
+                short_stop = self.intra_trade_low[vt_symbol] + self.atr_value[vt_symbol] * self.sl_multiplier
 
-        # Execute orders
+                if bar.close_price >= short_stop:
+                    self.targets[vt_symbol] = 0
+
         for vt_symbol in self.vt_symbols:
             target_pos = self.targets[vt_symbol]
             current_pos = self.get_pos(vt_symbol)
@@ -501,6 +531,8 @@ StrategyTemplate中以on开头的函数称为回调函数，在编写策略的�
             pos_diff = target_pos - current_pos
             volume = abs(pos_diff)
             bar = bars[vt_symbol]
+            boll_up = self.boll_up[vt_symbol]
+            boll_down = self.boll_down[vt_symbol]
 
             if pos_diff > 0:
                 price = bar.close_price + self.price_add
@@ -508,26 +540,26 @@ StrategyTemplate中以on开头的函数称为回调函数，在编写策略的�
                 if current_pos < 0:
                     self.cover(vt_symbol, price, volume)
                 else:
-                    self.buy(vt_symbol, price, volume)
+                    self.buy(vt_symbol, boll_up, volume)
             elif pos_diff < 0:
                 price = bar.close_price - self.price_add
 
                 if current_pos > 0:
                     self.sell(vt_symbol, price, volume)
                 else:
-                    self.short(vt_symbol, price, volume)
+                    self.short(vt_symbol, boll_down, volume)
 
         self.put_event()
-
 ```
 
- 
+- 清空未成交委托：为了防止之前下的单子在上一个2小时没有成交，但是下一个2小时可能已经调整了价格，就用cancel_all()方法立刻撤销之前未成交的所有委托，保证策略在当前这2小时开始时的整个状态是清晰和唯一的；
 
-### 委托回报、成交回报、停止单回报
+- 调用K线时间序列管理模块：基于最新的2小时K线数据来计算相应的技术指标，如布林带上下轨、CCI指标、ATR指标等。首先获取ArrayManager对象，然后将收到的K线推送进去，检查ArrayManager的初始化状态，如果还没初始化成功就直接返回，没有必要去进行后续的交易相关的逻辑判断。因为很多技术指标计算对最少K线数量有要求，如果数量不够的话计算出来的指标会出现错误或无意义。反之，如果没有return，就可以开始计算技术指标了；
 
-在于组合策略中需要对多合约同时下单交易，在回测时**无法判断某一段K线内部每个合约委托成交的先后时间顺序**，因此无法提供on_order和on_trade获取委托成交推送，而只能在每次on_bars回调时通过get_pos和get_order来进行相关的状态查询。
+- 信号计算：通过持仓的判断以及结合CCI指标、ATR指标在通道突破点挂出**限价单委托**（buy/sell)，同时设置离场点(short/cover)。
 
-同时组合策略模块只支持限价单交易，不提供停止单功能（StopOrder）。
+    请注意：
+    1. 在CTA策略模块中，通常都是通过访问策略的变量pos获取策略持仓来进行持仓判断。但在多合约组合策略模块中，是通过调用get_pos函数获取某一合约现在的持仓来进行逻辑判断，然后设定该合约的目标仓位，最后通过目标仓位和实际仓位的差别来进行逻辑判断进而发出交易信号的；
 
     2. 如果需要在图形界面刷新指标数值，请不要忘记调用put_event()函数。
 
@@ -564,108 +596,66 @@ buy/sell/short/cover都是策略内部的负责发单的交易请求类函数。
 ```python 3
     def buy(self, vt_symbol: str, price: float, volume: float, lock: bool = False, net: bool = False) -> List[str]:
         """
-        Send a new order.
+        Send buy order to open a long position.
         """
-        if self.trading:
-            vt_orderids = self.strategy_engine.send_order(
-                self, vt_symbol, direction, offset, price, volume, lock
-            )
-            return vt_orderids
-        else:
-            return []
+        return self.send_order(vt_symbol, Direction.LONG, Offset.OPEN, price, volume, lock, net)
 ```
 
+请注意，国内期货有开平仓的概念，例如买入操作要区分为买入开仓和买入平仓；但对于股票、外盘期货都是净持仓模式，没有开仓和平仓概念，所以只需使用买入（buy）和卖出（sell）这两个指令就可以了。
 
-&nbsp;
+**send_order**
 
-## 回测研究
-backtesting.py定义了回测引擎，下面主要介绍相关功能函数，以及回测引擎应用示例：
+* 入参：vt_symbol: str, direction: Direction, offset: Offset, price: float, volume: float, lock: bool = False, net: bool = False
 
-### 加载策略
+* 出参：vt_orderids: List[str] / 无
 
-把组合策略逻辑，对应所有合约品种，以及参数设置（可在策略文件外修改）载入到回测引擎中。
+send_order函数是策略引擎调用的发送委托的函数。一般在策略编写的时候不需要单独调用，通过buy/sell/short/cover函数发送限价委托即可。
 
 实盘的时候，收到传进来的参数后，会调用round_to函数基于合约的pricetick和min_volume对委托的价格和数量进行处理。
 
-负责载入对应品种的历史数据，大概有4个步骤：
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能发出交易委托。如果策略的Trading状态为【False】时调用了该函数，只会返回[]。
 
-- 检查起始日期是否小于结束日期；
-- 清除之前载入的历史数据；
-- 有条件地从数据库中选取数据，每次载入30天数据。其筛选标准包括：vt_symbol、 回测开始日期、回测结束日期、K线周期；
-- 载入数据是以迭代方式进行的，数据最终存入self.history_data。
+**cancel_order**
 
-```
-    def load_data(self) -> None:
-        """"""
-        self.output("开始加载历史数据")
+* 入参：vt_orderid: str
 
-        if not self.end:
-            self.end = datetime.now()
+* 出参：无
 
-        if self.start >= self.end:
-            self.output("起始日期必须小于结束日期")
-            return
+**cancel_all**
 
-        # Clear previously loaded history data
-        self.history_data.clear()
-        self.dts.clear()
+* 入参：无
 
-        # Load 30 days of data each time and allow for progress update
-        progress_delta = timedelta(days=30)
-        total_delta = self.end - self.start
-        interval_delta = INTERVAL_DELTA_MAP[self.interval]
+* 出参：无
 
-        for vt_symbol in self.vt_symbols:
-            start = self.start
-            end = self.start + progress_delta
-            progress = 0
+cancel_order和cancel_all都是负责撤单的交易请求类函数。cancel_order是撤掉策略内指定的活动委托，cancel_all是撤掉策略所有的活动委托。
 
-            data_count = 0
-            while start < self.end:
-                end = min(end, self.end)  # Make sure end time stays within set range
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能撤单。
 
-                data = load_bar_data(
-                    vt_symbol,
-                    self.interval,
-                    start,
-                    end
-                )
+### 功能函数
 
-                for bar in data:
-                    self.dts.add(bar.datetime)
-                    self.history_data[(bar.datetime, vt_symbol)] = bar
-                    data_count += 1
+以下为策略以外的功能函数：
 
-                progress += progress_delta / total_delta
-                progress = min(progress, 1)
-                progress_bar = "#" * int(progress * 10)
-                self.output(f"{vt_symbol}加载进度：{progress_bar} [{progress:.0%}]")
+**get_pos**
 
-                start = end + interval_delta
-                end += (progress_delta + interval_delta)
+* 入参：vt_symbol: str
 
-            self.output(f"{vt_symbol}历史数据加载完成，数据量：{data_count}")
+* 出参：int / 0 
 
-        self.output("所有历史数据加载完成")
-```
-&nbsp;
+在策略里调用get_pos函数，可以获取特定合约的持仓数据。
 
-### 撮合成交
+**get_order**
 
-载入组合策略以及相关历史数据后，策略会根据最新的数据来计算相关指标。若符合条件会生成交易信号，发出具体委托（buy/sell/short/cover），并且在下一根K线成交。
+* 入参：vt_orderid
 
-回测引擎提供限价单撮合成交机制来尽量模仿真实交易环节：
+* 出参：OrderData / 无
 
-- 限价单撮合成交：（以买入方向为例）先确定是否发生成交，成交标准为委托价>= 下一根K线的最低价；然后确定成交价格，成交价格为委托价与下一根K线开盘价的最小值。
+在策略里调用get_order函数，可以获取特定合约的委托数据。
 
+**get_all_active_orderids**
 
-&nbsp;
+* 入参：无
 
-下面展示在引擎中限价单撮合成交的流程：
-- 确定会撮合成交的价格；
-- 遍历限价单字典中的所有限价单，推送委托进入未成交队列的更新状态；
-- 判断成交状态，若出现成交，推送成交数据和委托数据；
-- 从字典中删除已成交的限价单。
+* 出参：List[OrderData] / 无
 
 在策略里调用get_all_active_orderids函数，可以获取当前全部活动委托号。
 
@@ -698,567 +688,196 @@ backtesting.py定义了回测引擎，下面主要介绍相关功能函数，以
 ```python 3
     def load_bars(self, days: int, interval: Interval = Interval.MINUTE) -> None:
         """
-        Cross limit order with last bar/tick data.
+        Load historical bar data for initializing strategy.
         """
-        for order in list(self.active_limit_orders.values()):
-            bar = self.bars[order.vt_symbol]
-
-            long_cross_price = bar.low_price
-            short_cross_price = bar.high_price
-            long_best_price = bar.open_price
-            short_best_price = bar.open_price
-
-            # Push order update with status "not traded" (pending).
-            if order.status == Status.SUBMITTING:
-                order.status = Status.NOTTRADED
-                self.strategy.update_order(order)
-
-            # Check whether limit orders can be filled.
-            long_cross = (
-                order.direction == Direction.LONG
-                and order.price >= long_cross_price
-                and long_cross_price > 0
-            )
-
-            short_cross = (
-                order.direction == Direction.SHORT
-                and order.price <= short_cross_price
-                and short_cross_price > 0
-            )
-
-            if not long_cross and not short_cross:
-                continue
-
-            # Push order update with status "all traded" (filled).
-            order.traded = order.volume
-            order.status = Status.ALLTRADED
-            self.strategy.update_order(order)
-
-            self.active_limit_orders.pop(order.vt_orderid)
-
-            # Push trade update
-            self.trade_count += 1
-
-            if long_cross:
-                trade_price = min(order.price, long_best_price)
-            else:
-                trade_price = max(order.price, short_best_price)
-
-            trade = TradeData(
-                symbol=order.symbol,
-                exchange=order.exchange,
-                orderid=order.orderid,
-                tradeid=str(self.trade_count),
-                direction=order.direction,
-                offset=order.offset,
-                price=trade_price,
-                volume=order.volume,
-                datetime=self.datetime,
-                gateway_name=self.gateway_name,
-            )
-
-            self.strategy.update_trade(trade)
+        self.strategy_engine.load_bars(self, days, interval)
 ```
 
-&nbsp;
+**put_event**
 
-### 计算策略盈亏情况
+* 入参：无
 
-基于收盘价、当日持仓量、合约规模、滑点、手续费率等计算总盈亏与净盈亏，并且其计算结果以DataFrame格式输出，完成基于逐日盯市盈亏统计。
+* 出参：无
 
-下面展示盈亏情况的计算过程
+在策略中调用put_event函数，可以通知图形界面刷新策略状态相关显示。
 
-- 浮动盈亏 = 持仓量 \*（当日收盘价 - 昨日收盘价）\*  合约规模
-- 实际盈亏 = 持仓变化量  \* （当时收盘价 - 开仓成交价）\* 合约规模
-- 总盈亏 = 浮动盈亏 + 实际盈亏
-- 净盈亏 = 总盈亏 - 总手续费 - 总滑点
+请注意，要策略初始化完成，inited状态变为【True】之后，才能刷新界面。
 
+**send_email**
+
+* 入参：msg: str
+
+* 出参：无
+
+配置好邮箱相关信息之后（配置方法详见基本使用篇的全局配置部分），在策略中调用send_email函数，可以发送指定内容的邮件到自己的邮箱。
+
+请注意，要策略初始化完成，inited状态变为【True】之后，才能发送邮件。
+
+**sync_data**
+
+* 入参：无
+
+* 出参：无
+
+在策略中调用sync_data函数，可以在实盘的时候，每次停止或成交时都同步策略变量进json文件中进行本地缓存，方便第二天初始化时再进行读取还原（策略引擎会去调用，在策略里无需主动调用）。
+
+请注意，要在策略启动之后，也就是策略的trading状态变为【True】之后，才能同步策略信息。
+
+## 多合约组合策略模板（StrategyTemplate）-- 进阶
+
+PortfolioStrategy模块针对的是多标的投资组合类的量化策略，这类策略在执行层面追求的是将策略投资组合的持仓调整到目标状态，而不去过多关注底层的委托交易细节。
+
+首先介绍持仓目标调仓交易的功能函数，来展示持仓目标调仓交易的功能支持：
+
+### 持仓目标调仓交易的功能函数介绍
+
+以下为持仓目标调仓交易模式中策略调用的功能函数：
+
+**set_target**
+
+* 入参：vt_symbol: str, target: int
+
+* 出参：无
+
+在策略里调用set_target函数，可以设定特定合约的目标仓位。
+
+请注意：目标仓位是一种持续性的状态，因此设置后在后续时间会持续保持下去，直到被再次设置修改。
+
+**get_target**
+
+* 入参：vt_symbol: str
+
+* 出参：int
+
+在策略里调用get_target函数，可以获取设定的特定合约目标仓位。
+
+请注意：策略的目标仓位状态会在sync_data时（成交、停止等）自动持久化到硬盘文件，并在策略重启后恢复。
+
+**rebalance_portfolio**
+
+* 入参：bars: Dict[str, BarData]
+
+* 出参：无
+
+在策略里调用rebalance_portfolio函数，可以基于设定的特定合约的目标仓位执行调仓交易。
+
+请注意：只有当前bars字典中有K线切片的合约，才会参与本次调仓交易的执行，从而保证非交易时段（没有行情推送）的合约不会错误发出委托。
+
+**calculate_price**
+
+* 入参：vt_symbol: str, direction: Direction, reference: float
+
+* 出参：pricetick: float
+
+在策略里重载calculate_price函数，可以按需设定特定合约的目标价格（如固定价格超价、固定pricetick超价、百分比超价等）。
+
+如果不传则默认返回参考价格（如不在策略中重载，则在rebalance_portfolio函数中以K线的收盘价作为委托价发出）。
+
+### 持仓目标调仓交易的功能函数使用示例
+
+持仓目标调仓交易功能与StrategyTemplate基础用法最大的不同，就在于策略on_bars函数中的处理差异。下面通过TrendFollowingStrategy策略示例，来展示持仓目标调仓交易的具体步骤：
+
+**on_bars**
+
+* 入参：bars: Dict[str, BarData]
+
+* 出参：无
+
+当策略收到最新的K线数据时（实盘时默认推进来的是基于Tick合成的一分钟的K线，回测时则取决于选择参数时填入的K线数据频率），on_bars函数就会被调用。
+
+示例策略类TrendFollowingStrategy是通过一分钟K线数据回报来生成信号的。一共有三部分，如下方代码所示：
+
+```python 3
+    def on_bars(self, bars: Dict[str, BarData]) -> None:
+        """K线切片回调"""
+        # 更新K线计算RSI数值
+        for vt_symbol, bar in bars.items():
+            am: ArrayManager = self.ams[vt_symbol]
+            am.update_bar(bar)
+
+        for vt_symbol, bar in bars.items():
+            am: ArrayManager = self.ams[vt_symbol]
+            if not am.inited:
+                return
+
+            atr_array = am.atr(self.atr_window, array=True)
+            self.atr_data[vt_symbol] = atr_array[-1]
+            self.atr_ma[vt_symbol] = atr_array[-self.atr_ma_window:].mean()
+            self.rsi_data[vt_symbol] = am.rsi(self.rsi_window)
+
+            current_pos = self.get_pos(vt_symbol)
+            if current_pos == 0:
+                self.intra_trade_high[vt_symbol] = bar.high_price
+                self.intra_trade_low[vt_symbol] = bar.low_price
+
+                if self.atr_data[vt_symbol] > self.atr_ma[vt_symbol]:
+                    if self.rsi_data[vt_symbol] > self.rsi_buy:
+                        self.set_target(vt_symbol, self.fixed_size)
+                    elif self.rsi_data[vt_symbol] < self.rsi_sell:
+                        self.set_target(vt_symbol, -self.fixed_size)
+                    else:
+                        self.set_target(vt_symbol, 0)
+
+            elif current_pos > 0:
+                self.intra_trade_high[vt_symbol] = max(self.intra_trade_high[vt_symbol], bar.high_price)
+                self.intra_trade_low[vt_symbol] = bar.low_price
+
+                long_stop = self.intra_trade_high[vt_symbol] * (1 - self.trailing_percent / 100)
+
+                if bar.close_price <= long_stop:
+                    self.set_target(vt_symbol, 0)
+
+            elif current_pos < 0:
+                self.intra_trade_low[vt_symbol] = min(self.intra_trade_low[vt_symbol], bar.low_price)
+                self.intra_trade_high[vt_symbol] = bar.high_price
+
+                short_stop = self.intra_trade_low[vt_symbol] * (1 + self.trailing_percent / 100)
+
+                if bar.close_price >= short_stop:
+                    self.set_target(vt_symbol, 0)
+
+        self.rebalance_portfolio(bars)
+
+        self.put_event()
 ```
-    def calculate_pnl(
-        self,
-        pre_close: float,
-        start_pos: float,
-        size: int,
-        rate: float,
-        slippage: float
-    ) -> None:
-        """"""
-        # If no pre_close provided on the first day,
-        # use value 1 to avoid zero division error
-        if pre_close:
-            self.pre_close = pre_close
+
+- 调用K线时间序列管理模块：基于最新的分钟K线数据来计算相应的技术指标，如ATR指标、RSI指标等。首先获取ArrayManager对象，然后将收到的K线推送进去，检查ArrayManager的初始化状态，如果还没初始化成功就直接返回，没有必要去进行后续的交易相关的逻辑判断。因为很多技术指标计算对最少K线数量有要求，如果数量不够的话计算出来的指标会出现错误或无意义。反之，如果没有return，就可以开始计算技术指标了；
+
+- 信号计算：通过持仓的判断（get_pos）以及结合指标计算结果在通道突破点**设定目标仓位**（set_target）
+
+- 执行调仓交易（rebalance_portfolio）
+
+**calculate_price**
+
+* 入参：vt_symbol: str, direction: Direction, reference: float
+
+* 出参：prcie: float
+
+当rebalance_portfolio函数检测到目标仓位与实际仓位存在差别的时候，会调用calculate_price函数计算调仓委托价格。
+
+策略内的默认写法是针对委托方向基于设置的price_add来计算委托价格，也可以参考示例策略PairTradingStrategy中的基于设置的tick_add来计算委托价格。
+
+```python 3
+    def calculate_price(self, vt_symbol: str, direction: Direction, reference: float) -> float:
+        """计算调仓委托价格（支持按需重载实现）"""
+        if direction == Direction.LONG:
+            price: float = reference + self.price_add
         else:
-            self.pre_close = 1
+            price: float = reference - self.price_add
 
-        # Holding pnl is the pnl from holding position at day start
-        self.start_pos = start_pos
-        self.end_pos = start_pos
-
-        self.holding_pnl = self.start_pos * (self.close_price - self.pre_close) * size
-
-        # Trading pnl is the pnl from new trade during the day
-        self.trade_count = len(self.trades)
-
-        for trade in self.trades:
-            if trade.direction == Direction.LONG:
-                pos_change = trade.volume
-            else:
-                pos_change = -trade.volume
-
-            self.end_pos += pos_change
-
-            turnover = trade.volume * size * trade.price
-
-            self.trading_pnl += pos_change * (self.close_price - trade.price) * size
-            self.slippage += trade.volume * size * slippage
-            self.turnover += turnover
-            self.commission += turnover * rate
-
-        # Net pnl takes account of commission and slippage cost
-        self.total_pnl = self.trading_pnl + self.holding_pnl
-        self.net_pnl = self.total_pnl - self.commission - self.slippage
-```
-&nbsp;
-
-
-
-### 计算策略统计指标
-calculate_statistics函数是基于逐日盯市盈亏情况（DateFrame格式）来计算衍生指标，如最大回撤、年化收益、盈亏比、夏普比率等。
-
-```
-            df["balance"] = df["net_pnl"].cumsum() + self.capital
-            df["return"] = np.log(df["balance"] / df["balance"].shift(1)).fillna(0)
-            df["highlevel"] = (
-                df["balance"].rolling(
-                    min_periods=1, window=len(df), center=False).max()
-            )
-            df["drawdown"] = df["balance"] - df["highlevel"]
-            df["ddpercent"] = df["drawdown"] / df["highlevel"] * 100
-
-            # Calculate statistics value
-            start_date = df.index[0]
-            end_date = df.index[-1]
-
-            total_days = len(df)
-            profit_days = len(df[df["net_pnl"] > 0])
-            loss_days = len(df[df["net_pnl"] < 0])
-
-            end_balance = df["balance"].iloc[-1]
-            max_drawdown = df["drawdown"].min()
-            max_ddpercent = df["ddpercent"].min()
-            max_drawdown_end = df["drawdown"].idxmin()
-
-            if isinstance(max_drawdown_end, date):
-                max_drawdown_start = df["balance"][:max_drawdown_end].idxmax()
-                max_drawdown_duration = (max_drawdown_end - max_drawdown_start).days
-            else:
-                max_drawdown_duration = 0
-
-            total_net_pnl = df["net_pnl"].sum()
-            daily_net_pnl = total_net_pnl / total_days
-
-            total_commission = df["commission"].sum()
-            daily_commission = total_commission / total_days
-
-            total_slippage = df["slippage"].sum()
-            daily_slippage = total_slippage / total_days
-
-            total_turnover = df["turnover"].sum()
-            daily_turnover = total_turnover / total_days
-
-            total_trade_count = df["trade_count"].sum()
-            daily_trade_count = total_trade_count / total_days
-
-            total_return = (end_balance / self.capital - 1) * 100
-            annual_return = total_return / total_days * 240
-            daily_return = df["return"].mean() * 100
-            return_std = df["return"].std() * 100
-
-            pnl_std = df["net_pnl"].std()
-
-            if return_std:
-                # sharpe_ratio = daily_return / return_std * np.sqrt(240)
-                sharpe_ratio = daily_net_pnl / pnl_std * np.sqrt(240)
-            else:
-                sharpe_ratio = 0
-
-            return_drawdown_ratio = -total_net_pnl / max_drawdown
-```
-&nbsp;
-
-### 统计指标绘图
-通过matplotlib绘制4幅图：
-- 资金曲线图
-- 资金回撤图
-- 每日盈亏图
-- 每日盈亏分布图
-
-```
-    def show_chart(self, df: DataFrame = None) -> None:
-        """"""
-        # Check DataFrame input exterior
-        if df is None:
-            df = self.daily_df
-
-        # Check for init DataFrame
-        if df is None:
-            return
-
-        fig = make_subplots(
-            rows=4,
-            cols=1,
-            subplot_titles=["Balance", "Drawdown", "Daily Pnl", "Pnl Distribution"],
-            vertical_spacing=0.06
-        )
-
-        balance_line = go.Scatter(
-            x=df.index,
-            y=df["balance"],
-            mode="lines",
-            name="Balance"
-        )
-        drawdown_scatter = go.Scatter(
-            x=df.index,
-            y=df["drawdown"],
-            fillcolor="red",
-            fill='tozeroy',
-            mode="lines",
-            name="Drawdown"
-        )
-        pnl_bar = go.Bar(y=df["net_pnl"], name="Daily Pnl")
-        pnl_histogram = go.Histogram(x=df["net_pnl"], nbinsx=100, name="Days")
-
-        fig.add_trace(balance_line, row=1, col=1)
-        fig.add_trace(drawdown_scatter, row=2, col=1)
-        fig.add_trace(pnl_bar, row=3, col=1)
-        fig.add_trace(pnl_histogram, row=4, col=1)
-
-        fig.update_layout(height=1000, width=1000)
-        fig.show()    def show_chart(self, df: DataFrame = None):
-        """"""
-        if not df:
-            df = self.daily_df
-        
-        if df is None:
-            return
-
-        plt.figure(figsize=(10, 16))
-
-        balance_plot = plt.subplot(4, 1, 1)
-        balance_plot.set_title("Balance")
-        df["balance"].plot(legend=True)
-
-        drawdown_plot = plt.subplot(4, 1, 2)
-        drawdown_plot.set_title("Drawdown")
-        drawdown_plot.fill_between(range(len(df)), df["drawdown"].values)
-
-        pnl_plot = plt.subplot(4, 1, 3)
-        pnl_plot.set_title("Daily Pnl")
-        df["net_pnl"].plot(kind="bar", legend=False, grid=False, xticks=[])
-
-        distribution_plot = plt.subplot(4, 1, 4)
-        distribution_plot.set_title("Daily Pnl Distribution")
-        df["net_pnl"].hist(bins=50)
-
-        plt.show()
+        return price
 ```
 
-&nbsp;
+### 与StrategyTemplate基础用法的差别
 
-效果如下：
+**on_bars**
 
-![回测结果](https://user-images.githubusercontent.com/11263900/93662305-b8737e00-fa91-11ea-8c83-70ca30e58dc4.png)
+1 . 无需清空未成交委托：rebalance_portfolio中已经有调用cancel_all函数的逻辑，无需再在收到on_bars函数推送的时候调用cancel_all函数对未成交的委托进行撤单处理。
 
-![回测图](https://user-images.githubusercontent.com/11263900/93662331-ec4ea380-fa91-11ea-9e93-d61f90d0d282.png)
+2 . 无需使用self.targets字典缓存合约目标仓位：直接调用set_target函数传入合约以及目标仓位（正数代表做多、负数代表做空）进行设置即可。
 
-&nbsp;
+3 . 无需基于缓存的目标仓位在策略内手写委托逻辑：rebalance_portfolio函数已经自动接管调仓交易，会基于目标仓位进行委托。
 
-### 策略回测示例
+**calculate_price**
 
-- 导入回测引擎和组合策略
-- 设置回测相关参数，如：品种、K线周期、回测开始和结束日期、手续费、滑点、合约规模、起始资金
-- 载入策略和数据到引擎中，运行回测。
-- 计算基于逐日统计盈利情况，计算统计指标，统计指标绘图。
-
-
-```
-from datetime import datetime
-from importlib import reload
-
-import vnpy.app.portfolio_strategy
-reload(vnpy.app.portfolio_strategy)
-
-from vnpy.app.portfolio_strategy import BacktestingEngine
-from vnpy.trader.constant import Interval
-
-import vnpy.app.portfolio_strategy.strategies.pair_trading_strategy as stg
-reload(stg)
-from vnpy.app.portfolio_strategy.strategies.pair_trading_strategy import PairTradingStrategy
-
-engine = BacktestingEngine()
-engine.set_parameters(
-    vt_symbols=["y888.DCE", "p888.DCE"],
-    interval=Interval.MINUTE,
-    start=datetime(2019, 1, 1),
-    end=datetime(2020, 4, 30),
-    rates={
-        "y888.DCE": 0/10000,
-        "p888.DCE": 0/10000
-    },
-    slippages={
-        "y888.DCE": 0,
-        "p888.DCE": 0
-    },
-    sizes={
-        "y888.DCE": 10,
-        "p888.DCE": 10
-    },
-    priceticks={
-        "y888.DCE": 1,
-        "p888.DCE": 1
-    },
-    capital=1_000_000,
-)
-
-setting = {
-    "boll_window": 20,
-    "boll_dev": 1,
-}
-engine.add_strategy(PairTradingStrategy, setting)
-
-engine.load_data()
-engine.run_backtesting()
-df = engine.calculate_result()
-engine.calculate_statistics()
-engine.show_chart()
-```
-
-&nbsp;
-
-## 实盘运行
-在实盘环境，用户可以基于编写好的组合策略来创建新的实例，一键初始化、启动、停止策略（不要忘记先连接对应接口，获取行情）。
-
-
-### 创建策略实例
-用户可以基于编写好的组合策略来创建新的实例，策略实例的好处在于同一个策略可以同时去运行多个品种合约，并且每个实例的参数可以是不同的。
-在创建实例的时候需要填写如图的实例名称、合约品种、参数设置。注意：实例名称不能重名；合约名称是vt_symbol的格式，如y2101.DCE,p2101.DCE。
-
-![创建](https://user-images.githubusercontent.com/11263900/93662304-b6a9ba80-fa91-11ea-895a-ae56fc7ddf60.png)
-
-创建策略流程如下：
-- 检查策略实例重名
-- 检查是否存在策略类
-- 添加策略配置信息(strategy_name, vt_symbols, setting)到strategies字典上
-- 添加该策略要订阅行情的所有合约信息到symbol_strategy_map字典中；
-- 把策略配置信息保存到json文件内；
-- 在图形化界面更新状态信息。
-
-```
-    def add_strategy(
-        self, class_name: str, strategy_name: str, vt_symbols: str, setting: dict
-    ):
-        """
-        Add a new strategy.
-        """
-        if strategy_name in self.strategies:
-            self.write_log(f"创建策略失败，存在重名{strategy_name}")
-            return
-
-        strategy_class = self.classes.get(class_name, None)
-        if not strategy_class:
-            self.write_log(f"创建策略失败，找不到策略类{class_name}")
-            return
-
-        strategy = strategy_class(self, strategy_name, vt_symbols, setting)
-        self.strategies[strategy_name] = strategy
-
-        # Add vt_symbol to strategy map.
-        for vt_symbol in vt_symbols:
-            strategies = self.symbol_strategy_map[vt_symbol]
-            strategies.append(strategy)
-
-        self.save_strategy_setting()
-        self.put_strategy_event(strategy)
-```
-
-![初始化](https://user-images.githubusercontent.com/11263900/93662303-b27d9d00-fa91-11ea-824f-58645bd4e202.png)
-
-&nbsp;
-
-### 初始化策略
-- 调用策略类的on_init()回调函数,并且载入历史数据；
-- 恢复上次退出之前的策略状态；
-- 从.vntrader/portfolio_strategy_data.json内读取策略参数，最新的技术指标，以及持仓数量；
-- 调用接口的subcribe()函数订阅指定行情信息；
-- 策略初始化状态变成True，并且更新到日志上。
-  
-```
-    def _init_strategy(self, strategy_name: str):
-        """
-        Init strategies in queue.
-        """
-        strategy = self.strategies[strategy_name]
-
-        if strategy.inited:
-            self.write_log(f"{strategy_name}已经完成初始化，禁止重复操作")
-            return
-
-        self.write_log(f"{strategy_name}开始执行初始化")
-
-        # Call on_init function of strategy
-        self.call_strategy_func(strategy, strategy.on_init)
-
-        # Restore strategy data(variables)
-        data = self.strategy_data.get(strategy_name, None)
-        if data:
-            for name in strategy.variables:
-                value = data.get(name, None)
-                if name == "pos":
-                    pos = getattr(strategy, name)
-                    pos.update(value)
-                elif value:
-                    setattr(strategy, name, value)
-
-        # Subscribe market data
-        for vt_symbol in strategy.vt_symbols:
-            contract: ContractData = self.main_engine.get_contract(vt_symbol)
-            if contract:
-                req = SubscribeRequest(
-                    symbol=contract.symbol, exchange=contract.exchange)
-                self.main_engine.subscribe(req, contract.gateway_name)
-            else:
-                self.write_log(f"行情订阅失败，找不到合约{vt_symbol}", strategy)
-
-        # Put event to update init completed status.
-        strategy.inited = True
-        self.put_strategy_event(strategy)
-        self.write_log(f"{strategy_name}初始化完成")
-```
-
-&nbsp;
-
-### 启动策略
-- 检查策略初始化状态；
-- 检查策略启动状态，避免重复启动；
-- 调用策略类的on_start()函数启动策略；
-- 策略启动状态变成True，并且更新到图形化界面上。
-
-```
-    def start_strategy(self, strategy_name: str):
-        """
-        Start a strategy.
-        """
-        strategy = self.strategies[strategy_name]
-        if not strategy.inited:
-            self.write_log(f"策略{strategy.strategy_name}启动失败，请先初始化")
-            return
-
-        if strategy.trading:
-            self.write_log(f"{strategy_name}已经启动，请勿重复操作")
-            return
-
-        self.call_strategy_func(strategy, strategy.on_start)
-        strategy.trading = True
-
-        self.put_strategy_event(strategy)
-```
-
-![启动](https://user-images.githubusercontent.com/11263900/93662312-bdd0c880-fa91-11ea-97b1-8a3505cfcb97.png)
-
-如果当天发生了交易，主界面如图：
-
-![主界面](https://user-images.githubusercontent.com/11263900/93662316-bf01f580-fa91-11ea-8ac6-807e28cbadd5.png)
-
-&nbsp;
-
-### 停止策略
-- 检查策略启动状态；
-- 调用策略类的on_stop()函数停止策略；
-- 更新策略启动状态为False；
-- 对所有为成交的委托（市价单/限价单/本地停止单）进行撤单操作；
-- 把策略参数，最新的技术指标，以及持仓数量保存到.vntrader/cta_strategy_data.json内；
-- 在图形化界面更新策略状态。
-
-```
-    def stop_strategy(self, strategy_name: str):
-        """
-        Stop a strategy.
-        """
-        strategy = self.strategies[strategy_name]
-        if not strategy.trading:
-            return
-
-        # Call on_stop function of the strategy
-        self.call_strategy_func(strategy, strategy.on_stop)
-
-        # Change trading status of strategy to False
-        strategy.trading = False
-
-        # Cancel all orders of the strategy
-        self.cancel_all(strategy)
-
-        # Sync strategy variables to data file
-        self.sync_strategy_data(strategy)
-
-        # Update GUI
-        self.put_strategy_event(strategy)
-```
-
-![停止](https://user-images.githubusercontent.com/11263900/93662315-be695f00-fa91-11ea-8b1a-78a2f945db23.png)
-
-&nbsp;
-
-### 编辑策略
-- 重新配置策略参数字典setting；
-- 更新参数字典到策略中；
-- 保存参数字典setting;
-- 在图像化界面更新策略状态。
-
-```
-    def edit_strategy(self, strategy_name: str, setting: dict):
-        """
-        Edit parameters of a strategy.
-        """
-        strategy = self.strategies[strategy_name]
-        strategy.update_setting(setting)
-
-        self.save_strategy_setting()
-        self.put_strategy_event(strategy)
-```
-
-&nbsp;
-
-### 移除策略
-- 检查策略状态，只有停止策略后从可以移除策略；
-- 从symbol_strategy_map字典中移除该策略订阅的合约信息；
-- 从strategy_orderid_map字典移除活动委托记录；
-- 从strategies字典移除该策略的相关配置信息。
-
-```
-    def remove_strategy(self, strategy_name: str):
-        """
-        Remove a strategy.
-        """
-        strategy = self.strategies[strategy_name]
-        if strategy.trading:
-            self.write_log(f"策略{strategy.strategy_name}移除失败，请先停止")
-            return
-
-        # Remove from symbol strategy map
-        for vt_symbol in strategy.vt_symbols:
-            strategies = self.symbol_strategy_map[vt_symbol]
-            strategies.remove(strategy)
-
-        # Remove from vt_orderid strategy map
-        for vt_orderid in strategy.active_orderids:
-            if vt_orderid in self.orderid_strategy_map:
-                self.orderid_strategy_map.pop(vt_orderid)
-
-        # Remove from strategies
-        self.strategies.pop(strategy_name)
-        self.save_strategy_setting()
-
-        return True
-```
-
-
+持仓目标调仓交易需要调用calculate_price函数计算调仓委托价格。

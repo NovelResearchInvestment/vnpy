@@ -2,7 +2,7 @@
 Basic data structure used for general trading function in VN Trader.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from logging import INFO
 
@@ -19,6 +19,8 @@ class BaseData:
     """
 
     gateway_name: str
+
+    extra: dict = field(default=None, init=False)
 
 
 @dataclass
@@ -174,7 +176,7 @@ class TradeData(BaseData):
 @dataclass
 class PositionData(BaseData):
     """
-    Positon data is used for tracking each individual position holding.
+    Position data is used for tracking each individual position holding.
     """
 
     symbol: str
@@ -190,7 +192,7 @@ class PositionData(BaseData):
     def __post_init__(self) -> None:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
-        self.vt_positionid: str = f"{self.vt_symbol}.{self.direction.value}"
+        self.vt_positionid: str = f"{self.gateway_name}.{self.vt_symbol}.{self.direction.value}"
 
 
 @dataclass

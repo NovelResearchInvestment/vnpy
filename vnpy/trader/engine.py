@@ -45,6 +45,7 @@ from .object import (
 )
 from .setting import SETTINGS
 from .utility import get_folder_path, TRADER_DIR
+from .converter import OffsetConverter
 
 
 class MainEngine:
@@ -153,7 +154,7 @@ class MainEngine:
 
     def get_all_gateway_names(self) -> List[str]:
         """
-        Get all names of gatewasy added in main engine.
+        Get all names of gateway added in main engine.
         """
         return list(self.gateways.keys())
 
@@ -248,7 +249,7 @@ class MainEngine:
 
 class BaseEngine(ABC):
     """
-    Abstract class for implementing an function engine.
+    Abstract class for implementing a function engine.
     """
 
     def __init__(
@@ -365,6 +366,8 @@ class OmsEngine(BaseEngine):
         self.active_orders: Dict[str, OrderData] = {}
         self.active_quotes: Dict[str, QuoteData] = {}
 
+        self.offset_converters: Dict[str, OffsetConverter] = {}
+
         self.add_function()
         self.register_event()
 
@@ -391,6 +394,10 @@ class OmsEngine(BaseEngine):
         self.main_engine.get_settlements = self.get_settlements
         self.main_engine.get_settlement_content = self.get_settlement_content
         self.main_engine.get_all_settlements = self.get_all_settlements
+
+        self.main_engine.update_order_request = self.update_order_request
+        self.main_engine.convert_order_request = self.convert_order_request
+        self.main_engine.get_converter = self.get_converter
 
     def register_event(self) -> None:
         """"""
@@ -420,15 +427,30 @@ class OmsEngine(BaseEngine):
         elif order.vt_orderid in self.active_orders:
             self.active_orders.pop(order.vt_orderid)
 
+        # Update to offset converter
+        converter: OffsetConverter = self.offset_converters.get(order.gateway_name, None)
+        if converter:
+            converter.update_order(order)
+
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
         self.trades[trade.vt_tradeid] = trade
 
+        # Update to offset converter
+        converter: OffsetConverter = self.offset_converters.get(trade.gateway_name, None)
+        if converter:
+            converter.update_trade(trade)
+
     def process_position_event(self, event: Event) -> None:
         """"""
         position: PositionData = event.data
         self.positions[position.vt_positionid] = position
+
+        # Update to offset converter
+        converter: OffsetConverter = self.offset_converters.get(position.gateway_name, None)
+        if converter:
+            converter.update_position(position)
 
     def process_account_event(self, event: Event) -> None:
         """"""
@@ -439,6 +461,10 @@ class OmsEngine(BaseEngine):
         """"""
         contract: ContractData = event.data
         self.contracts[contract.vt_symbol] = contract
+
+        # Initialize offset converter for each gateway
+        if contract.gateway_name not in self.offset_converters:
+            self.offset_converters[contract.gateway_name] = OffsetConverter(self)
 
     def process_quote_event(self, event: Event) -> None:
         """"""
@@ -596,6 +622,37 @@ class OmsEngine(BaseEngine):
                 if quote.vt_symbol == vt_symbol
             ]
             return active_quotes
+
+    def update_order_request(self, req: OrderRequest, vt_orderid: str, gateway_name: str) -> None:
+        """
+        Update order request to offset converter.
+        """
+        converter: OffsetConverter = self.offset_converters.get(gateway_name, None)
+        if converter:
+            converter.update_order_request(req, vt_orderid)
+
+    def convert_order_request(
+        self,
+        req: OrderRequest,
+        gateway_name: str,
+        lock: bool,
+        net: bool = False
+    ) -> List[OrderRequest]:
+        """
+        Convert original order request according to given mode.
+        """
+        converter: OffsetConverter = self.offset_converters.get(gateway_name, None)
+        if not converter:
+            return [req]
+
+        reqs: List[OrderRequest] = converter.convert_order_request(req, lock, net)
+        return reqs
+
+    def get_converter(self, gateway_name: str) -> OffsetConverter:
+        """
+        Get offset converter object of specific gateway.
+        """
+        return self.offset_converters.get(gateway_name, None)
 
 
 class EmailEngine(BaseEngine):

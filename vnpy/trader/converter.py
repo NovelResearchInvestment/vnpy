@@ -1,35 +1,27 @@
 from copy import copy
-from typing import Dict, List
+from typing import Dict, List, Set, TYPE_CHECKING
 
-from .engine import MainEngine
 from .object import (
     ContractData,
     OrderData,
     TradeData,
     PositionData,
-    AccountData,
     OrderRequest
 )
 from .constant import Direction, Offset, Exchange
+
+if TYPE_CHECKING:
+    from .engine import MainEngine
 
 
 class OffsetConverter:
     """"""
 
-    def __init__(self, main_engine: MainEngine) -> None:
+    def __init__(self, main_engine: "MainEngine") -> None:
         """"""
-        self.main_engine: MainEngine = main_engine
         self.holdings: Dict[str, "PositionHolding"] = {}
 
-    def update_account(self, account: AccountData) -> None:
-        """"""
-        # holding = self.get_position_holding(account.vt_symbol)
-        vt_symbol = f"{account.accountid.lower()}usdt.{account.gateway_name}"
-        if not self.is_convert_required(vt_symbol):
-            return
-
-        holding = self.get_position_holding(vt_symbol)
-        holding.update_account(account)
+        self.get_contract = main_engine.get_contract
 
     def update_position(self, position: PositionData) -> None:
         """"""
@@ -67,7 +59,7 @@ class OffsetConverter:
         """"""
         holding: PositionHolding = self.holdings.get(vt_symbol, None)
         if not holding:
-            contract: ContractData = self.main_engine.get_contract(vt_symbol)
+            contract: ContractData = self.get_contract(vt_symbol)
             holding = PositionHolding(contract)
             self.holdings[vt_symbol] = holding
         return holding
@@ -97,7 +89,7 @@ class OffsetConverter:
         """
         Check if the contract needs offset convert.
         """
-        contract: ContractData = self.main_engine.get_contract(vt_symbol)
+        contract: ContractData = self.get_contract(vt_symbol)
 
         # Only contracts with long-short position mode requires convert
         if not contract:
@@ -117,7 +109,6 @@ class PositionHolding:
         self.exchange: Exchange = contract.exchange
 
         self.active_orders: Dict[str, OrderData] = {}
-        self.account_info: Dict[str, OrderData] = {}
 
         self.long_pos: float = 0
         self.long_yd: float = 0
@@ -134,16 +125,6 @@ class PositionHolding:
         self.short_pos_frozen: float = 0
         self.short_yd_frozen: float = 0
         self.short_td_frozen: float = 0
-
-    def update_account(self, account: AccountData) -> None:
-        """"""
-        # self.gateway_name = account.gateway_name
-        # self.accountid = account.accountid
-        # self.balance = account.balance
-        # self.frozen = account.frozen
-
-        for k, v in account.__dict__.items():
-            self.account_info[k] = v
 
     def update_position(self, position: PositionData) -> None:
         """"""
@@ -313,8 +294,10 @@ class PositionHolding:
             td_volume: int = self.long_td
             yd_available: int = self.long_yd - self.long_yd_frozen
 
+        close_yd_exchanges: Set[Exchange] = {Exchange.SHFE, Exchange.INE}
+
         # If there is td_volume, we can only lock position
-        if td_volume:
+        if td_volume and self.exchange not in close_yd_exchanges:
             req_open: OrderRequest = copy(req)
             req_open.offset = Offset.OPEN
             return [req_open]
@@ -327,7 +310,7 @@ class PositionHolding:
 
             if yd_available:
                 req_yd: OrderRequest = copy(req)
-                if self.exchange in [Exchange.SHFE, Exchange.INE]:
+                if self.exchange in close_yd_exchanges:
                     req_yd.offset = Offset.CLOSEYESTERDAY
                 else:
                     req_yd.offset = Offset.CLOSE
