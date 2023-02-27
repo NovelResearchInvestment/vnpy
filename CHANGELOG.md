@@ -1,3 +1,98 @@
+# 3.6.0版本
+
+## 新增
+
+1. 新增vnpy_ctp的Mac系统支持（M1/M2）
+
+## 调整
+
+1. BaseDatafeed的相关功能函数增加output入参用于输出日志
+2. 修改相关数据服务模块适配output参数：vnpy_rqdata/vnpy_ifind/vnpy_wind/vnpy_tushare
+3. 修改相关策略应用模块适配output参数：vnpy_ctastrategy/vnpy_ctabacktester/vnpy_portfoliostrategy/vnpy_spreadtrading/vnpy_datamanager
+3. OffsetConverter增加对于SHFE/INE合约的锁仓模式支持
+4. 在OmsEngine中添加全局的OffsetConverter功能，不再需要各AppEngine自行维护
+5. 添加CTA策略模块在执行参数优化时的最大进程数量限制参数：vnpy_ctastrategy/vnpy_ctabacktester
+6. 增加穷举优化算法运行过程中基于tqdm的进度条输出
+7. 增加遗传优化算法运行过程中的迭代次数进度输出
+8. 增加vnpy_optionmaster模块的期权产品对应标的合约的匹配函数，不再限制产品范围
+9.  升级vnpy_tts的dll链接库，解决openctp升级导致的资金不显示的问题
+10. 修改vnpy_ctastrategy使用vnpy.trader.database中统一定义的时区来加载数据
+11. 增加vnpy_ctastrategy策略模板的合约乘数查询函数get_size
+12. 增加vnpy_spreadtrading回测中统计绩效时对于爆仓情况的检查
+13. 增加vnpy_scripttrader基于vt_symbol和direction查询持仓数据的函数
+14. 修改vt_positionid的字符串内容，增加gateway_name前缀标识
+
+## 修复
+
+1. 修复异常捕捉钩子threading_excepthook的参数错误问题
+2. 修复vnpy_ib获取历史数据时的异常失败问题
+3. 修复vnpy_rest/vnpy_websocket中aiohttp的代理参数proxy传空时必须为None的问题
+4. 修复vnpy_optionmaster模块的Greeks监控表行数设置不足的问题
+5. 修复vnpy_rqdata查询股票期权数据报错的问题
+6. 修复vnpy_rqdata中RqdataGateway获取期货指数和连续合约信息时错误的问题
+7. 修复vnpy_portfoliostrategy中，从缓存文件恢复数据，导致defaultdict变成dict的问题
+
+
+# 3.5.0版本
+
+## 新增
+
+1. 新增基于米筐RQData的跨市场行情数据接口RqdataGateway
+2. 新增东方财富证券EMT柜台交易接口vnpy_emt
+
+## 调整
+
+1. 调整vnpy_algotrading模块设计（模板、引擎），只支持单合约算法执行交易
+2. 优化vnpy_algotrading的算法状态控制，增加状态枚举值，算法支持暂停和恢复运行
+3. 升级vnpy_hft接口支持HFT国君统一交易网关的2.0版本API
+4. 优化vnpy_portfoliostrategy的策略模板，支持持仓目标调仓交易模式
+
+## 修复
+
+1. 修复后台线程异常捕捉钩子函数，对于Python 3.7的语法兼容性问题
+2. 修复vnpy_mysql加载历史数据时存在时段重复的问题
+3. 修复vnpy_ib由于TWS客户端升级导致的委托失败问题
+4. 修复vnpy_rest/vnpy_websocket对Python 3.10后asyncio的支持
+5. 修复vnpy_sopt由于流控导致的委托失败时，返回【提交中】状态委托的问题
+
+
+# 3.4.0版本
+
+## 新增
+
+1. 新增杰宜斯资管系统交易接口vnpy_jees
+
+## 调整
+
+1. 开启vnpy.rpc的pyzmq连接keepalive机制，避免在复杂网络环境下闲置连接的断开
+2. 移除vnpy_rpcservice中服务端的EVENT_TIMER定时事件推送
+3. 调整vnpy_postgresql采用批量方式写入数据，提高效率
+4. 添加VeighNa Trader中的子线程异常捕捉（需要Python>=3.8）
+5. 调整vnpy_ib接口查询历史K线数据时，对外汇和贵金属均采用中间价（而非成交价）
+6. 增加vnpy_ctastrategy对于回测过程中资金爆仓（小于等于0）情况的检查
+7. 优化vnpy_webtrader模块的加密鉴权，支持web进程关闭重启
+
+## 修复
+
+1. 修复vnpy.rpc模块对于23.0以上版本pyzmq的NOBLOCK兼容性问题
+2. 修复vnpy_taos由于TDengine版本升级，出现d的一系列兼容问题
+3. 修复vnpy_datamanager刷新数据汇总信息显示时，老数据点移除失败的问题
+
+
+
+# 3.3.0版本
+
+## 新增
+1. 新增数据库组件vnpy.trader.database中的TickOverview对象
+2. 新增掘金仿真环境交易接口vnpy_gm
+3. BaseData基础数据类型增加extra字段（字典类型），用于传送任意相关数据
+
+## 调整
+1. 使用Python内置的zoneinfo库替换三方的pytz库
+2. 调整相关交易接口、数据服务接口、数据库适配器、应用模块，使用新的ZoneInfo对象来标识时区信息
+3. 数据库适配器接口vnpy.trader.database写入数据时，新增流式写入参数stream，提高行情录制性能
+
+
 # 3.2.0版本
 
 ## 新增
@@ -77,7 +172,6 @@
 5. vnpy_uft升级使用3.7.2.4版本的恒生API接口
 
 ## 剥离
-1. 将南华期货NHTD交易接口剥离到vnpy_nhtd项目中
 2. 将国泰君安证券统一接入网关交易接口剥离到vnpy_hft项目中
 3. 将顶点飞创交易接口剥离到vnpy_sec项目中
 4. 将RPC服务和接口剥离到vnpy_rpcservice项目中

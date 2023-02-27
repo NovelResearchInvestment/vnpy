@@ -21,7 +21,7 @@ SpreadTrading是用于**多合约价差套利**的功能模块，用户可以通
 from vnpy.app.spread_trading import SpreadTradingApp
 
 # 写在创建main_engine对象后
-main_engine.add_app(spread_trading)         
+main_engine.add_app(SpreadTradingApp)
 ```
 
 
@@ -97,7 +97,7 @@ main_engine.add_app(spread_trading)
 请注意，在多条腿并且期货合约规模不等时，构建价差合约会相对困难一些，如构建虚拟钢厂套利所用到的价差合约时，计算公式如下：
 
 - 螺纹钢生产技艺是16吨铁矿石加上5吨焦炭练成10吨螺纹钢。
-- 基于价格乘数的价差spread = 1* RB - 1.6\*I  - 0.5\*O。
+- 基于价格乘数的价差spread = 1* RB - 1.6\*I  - 0.5\*J。
 - 但是由于螺纹是10吨/手，铁矿石和焦炭都是100吨/手，所以他们交易乘数是1：10：10；
 - 故基于最大公约数规则，其实际交易手数关系是每买入100手螺纹钢（1000吨），需要卖出16手铁矿石（1600吨）和5手焦炭（500吨）完成对冲。
 
