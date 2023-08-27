@@ -237,7 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Open connect dialog for gateway connection.
         """
         dialog: ConnectDialog = ConnectDialog(self.main_engine, gateway_name)
-        dialog.exec_()
+        dialog.exec()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -276,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.widgets[name] = widget
 
         if isinstance(widget, QtWidgets.QDialog):
-            widget.exec_()
+            widget.exec()
         else:
             widget.show()
 
@@ -322,4 +322,4 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         """
         dialog: GlobalDialog = GlobalDialog()
-        dialog.exec_()
+        dialog.exec()
