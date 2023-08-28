@@ -1,5 +1,5 @@
 """
-General constant string used in VN Trader.
+General constant enums used in the trading platform.
 """
 
 from enum import Enum
@@ -87,6 +87,9 @@ class Exchange(Enum):
     GFEX = "GFEX"           # Guangzhou Futures Exchange
     SSE = "SSE"             # Shanghai Stock Exchange
     SZSE = "SZSE"           # Shenzhen Stock Exchange
+    BSE = "BSE"             # Beijing Stock Exchange
+    SHHK = "SHHK"           # Shanghai-HK Stock Connect
+    SZHK = "SZHK"           # Shenzhen-HK Stock Connect
     SGE = "SGE"             # Shanghai Gold Exchange
     WXE = "WXE"             # Wuxi Steel Exchange
     CFETS = "CFETS"         # CFETS Bond Market Maker Trading System
@@ -125,20 +128,6 @@ class Exchange(Enum):
     KRX = "KRX"             # Korean Exchange
     OTC = "OTC"             # OTC Product (Forex/CFD/Pink Sheet Equity)
     IBKRATS = "IBKRATS"     # Paper Trading Exchange of IB
-    
-    # CryptoCurrency
-    BITMEX = "BITMEX"
-    OKEX = "OKEX"
-    HUOBI = "HUOBI"
-    BITFINEX = "BITFINEX"
-    BINANCE = "BINANCE"
-    BYBIT = "BYBIT"
-    COINBASE = "COINBASE"
-    DERIBIT = "DERIBIT"
-    GATEIO = "GATEIO"
-    BITSTAMP = "BITSTAMP"
-    DYDX = "DYDX"
-    FTX = "FTX"
 
     # Special Function
     LOCAL = "LOCAL"         # For local generated data
